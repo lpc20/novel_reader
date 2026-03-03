@@ -1,0 +1,103 @@
+import 'dart:convert';
+
+class Novel {
+  //小说id
+  final String id;
+  //小说标题
+  final String title;
+  //小说文件路径
+  final String filePath;
+  //小说文件大小
+  final int fileSize;
+  //小说编码
+  final String encoding;
+  //小说添加时间
+  final DateTime addedTime;
+  //小说最后阅读时间
+  final DateTime? lastReadTime;
+  //小说总章节数
+  final int totalChapters;
+  //小说封面颜色
+  final String coverColor;
+
+  Novel({
+    required this.id,
+    required this.title,
+    required this.filePath,
+    required this.fileSize,
+    required this.encoding,
+    required this.addedTime,
+    this.lastReadTime,
+    this.totalChapters = 0,
+    this.coverColor = '#4A90D9',
+  });
+
+  Novel copyWith({
+    String? id,
+    String? title,
+    String? filePath,
+    int? fileSize,
+    String? encoding,
+    DateTime? addedTime,
+    DateTime? lastReadTime,
+    int? totalChapters,
+    String? coverColor,
+  }) {
+    return Novel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      filePath: filePath ?? this.filePath,
+      fileSize: fileSize ?? this.fileSize,
+      encoding: encoding ?? this.encoding,
+      addedTime: addedTime ?? this.addedTime,
+      lastReadTime: lastReadTime ?? this.lastReadTime,
+      totalChapters: totalChapters ?? this.totalChapters,
+      coverColor: coverColor ?? this.coverColor,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'filePath': filePath,
+      'fileSize': fileSize,
+      'encoding': encoding,
+      'addedTime': addedTime.toIso8601String(),
+      'lastReadTime': lastReadTime?.toIso8601String(),
+      'totalChapters': totalChapters,
+      'coverColor': coverColor,
+    };
+  }
+
+  factory Novel.fromMap(Map<String, dynamic> map) {
+    return Novel(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      filePath: map['filePath'] as String,
+      fileSize: map['fileSize'] as int,
+      encoding: map['encoding'] as String,
+      addedTime: DateTime.parse(map['addedTime'] as String),
+      lastReadTime: map['lastReadTime'] != null
+          ? DateTime.parse(map['lastReadTime'] as String)
+          : null,
+      totalChapters: map['totalChapters'] as int? ?? 0,
+      coverColor: map['coverColor'] as String? ?? '#4A90D9',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Novel.fromJson(String source) =>
+      Novel.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  String get fileSizeFormatted {
+    if (fileSize < 1024) {
+      return '$fileSize B';
+    } else if (fileSize < 1024 * 1024) {
+      return '${(fileSize / 1024).toStringAsFixed(1)} KB';
+    } else {
+      return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+  }
+}
