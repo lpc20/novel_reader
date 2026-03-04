@@ -110,8 +110,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       appBar: AppBar(
         title: const Text('我的书架'),
         centerTitle: true,
-        backgroundColor: SettingsService.appBarColor,
-        foregroundColor: SettingsService.appBarTextColor,
+        backgroundColor: SettingsService.menuBackgroundColor,
+        foregroundColor: SettingsService.menuTextColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),

@@ -74,18 +74,18 @@ class SettingsService {
   static const List<Map<String, String>> themes = [
     {'name': '护眼', 'bg': '#CCE8CF', 'text': '#2C4A2E'},
     {'name': '羊皮纸', 'bg': '#F5F5DC', 'text': '#333333'},
-    {'name': '夜间', 'bg': '#1A1A1A', 'text': '#AAAAAA'},
+    {'name': '夜间', 'bg': '#1A1A1A', 'text': '#E0E0E0'},
     {'name': '白色', 'bg': '#FFFFFF', 'text': '#333333'},
   ];
 
-  // 护眼的AppBar颜色
-  static const Color appBarColor = Color(0xFF2C3E50);
-  static const Color appBarTextColor = Color(0xFFE8E8E8);
-
-  // 护眼的菜单颜色
-  static const Color menuBackgroundColor = Color(0xFF34495E);
+  // 菜单颜色 - 使用深色主题
+  static const Color menuBackgroundColor = Color(0xFF2C3E50);
   static const Color menuTextColor = Color(0xFFECF0F1);
-  static const Color menuIconColor = Color(0xFFBDC3C7);
+  static const Color menuIconColor = Color(0xFF95A5A6);
+  static const Color menuSecondaryTextColor = Color(0xFFBDC3C7);
+  static const Color menuDividerColor = Color(0xFF34495E);
+  static const Color menuHighlightColor = Color(0xFF3498DB);
+  static const Color menuHighlightTextColor = Color(0xFFFFFFFF);
 
   Future<void> init() async {
     final directory = await getApplicationDocumentsDirectory();

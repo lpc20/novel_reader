@@ -73,7 +73,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.menu_book, color: Colors.blue),
+                  const Icon(Icons.menu_book, color: Color(0xFF3498DB)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -84,6 +84,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
                         Text(
@@ -98,7 +99,11 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
                   ),
                   Text(
                     '当前: 第${widget.currentIndex + 1}章',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -117,7 +122,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
                     trailing: isCurrent
                         ? const Icon(
                             Icons.check_circle,
-                            color: Colors.blue,
+                            color: Color(0xFF3498DB),
                             size: 20,
                           )
                         : Text(
@@ -133,14 +138,16 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
-                        color: isCurrent ? Colors.blue : Colors.black87,
+                        color: isCurrent
+                            ? const Color(0xFF3498DB)
+                            : Colors.black87,
                         fontWeight: isCurrent
-                            ? FontWeight.bold
+                            ? FontWeight.w600
                             : FontWeight.normal,
                       ),
                     ),
                     tileColor: isCurrent
-                        ? Colors.blue.withValues(alpha: 0.1)
+                        ? const Color(0xFF3498DB).withValues(alpha: 0.1)
                         : null,
                     onTap: () => widget.onChapterSelected(index),
                   );

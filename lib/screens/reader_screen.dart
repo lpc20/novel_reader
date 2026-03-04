@@ -82,7 +82,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       width: 40,
       child: CircularProgressIndicator(
         strokeWidth: 4,
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
       ),
     ),
   );
@@ -236,8 +236,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
       TextSpan(
         text: text.substring(currentResult.startIndex, currentResult.endIndex),
         style: textStyle.copyWith(
-          backgroundColor: Colors.yellow,
+          backgroundColor: const Color(0xFFFFB74D),
           color: Colors.black,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
