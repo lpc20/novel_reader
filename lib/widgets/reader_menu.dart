@@ -63,9 +63,20 @@ class _ReaderMenuState extends State<ReaderMenu>
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    debugPrint('ReaderMenu initState');
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    debugPrint('ReaderMenu dispose');
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
-    debugPrint('ReaderMenu build');
     return Selector<ReaderProvider, _MenuData>(
       selector: (context, provider) => _MenuData(
         currentChapterIndex: provider.currentChapterIndex,

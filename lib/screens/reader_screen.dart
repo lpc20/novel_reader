@@ -63,7 +63,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int? _lastScrollTimestamp;
   static const int _throttleDelay = 100; // 100ms 节流延迟
-
+  static final progressIndicator = Center(
+    child: SizedBox(
+      height: 40,
+      width: 40,
+      child: CircularProgressIndicator(
+        strokeWidth: 4,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+      ),
+    ),
+  );
   @override
   void initState() {
     super.initState();
@@ -202,7 +211,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             child: Stack(
               children: [
                 if (data.isLoading)
-                  const Center(child: CircularProgressIndicator())
+                  progressIndicator
                 else
                   CustomScrollView(
                     key: ValueKey('content_${data.currentChapterIndex}'),
@@ -283,18 +292,20 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       ),
                     ],
                   ),
-                Selector<ReaderProvider, bool>(
-                  selector: (context, provider) => provider.showMenu,
-                  builder: (context, showMenu, child) {
-                    if (showMenu) {
-                      return ReaderMenu(
-                        novel: widget.novel,
-                        onClose: _toggleMenu,
-                        onChapterList: _openChapterDrawer,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                AnimatedOpacity(
+                  opacity: context.watch<ReaderProvider>().showMenu ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Visibility(
+                    visible: context.watch<ReaderProvider>().showMenu,
+                    maintainState: true,
+                    maintainAnimation: true,
+                    maintainSize: true,
+                    child: ReaderMenu(
+                      novel: widget.novel,
+                      onClose: _toggleMenu,
+                      onChapterList: _openChapterDrawer,
+                    ),
+                  ),
                 ),
               ],
             ),

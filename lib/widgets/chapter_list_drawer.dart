@@ -26,6 +26,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
 
   @override
   void initState() {
+    debugPrint('ChapterListDrawer initState');
     super.initState();
     // 延迟滚动到当前章节，等待抽屉布局完成
     Future.delayed(const Duration(milliseconds: 50), () {
@@ -36,12 +37,13 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
   @override
   void dispose() {
     _scrollController.dispose();
+    debugPrint('ChapterListDrawer dispose');
     super.dispose();
   }
 
   void _scrollToCurrentChapter() {
     if (widget.currentIndex > 0 && _scrollController.hasClients) {
-      const itemHeight = 40.0; // ListTile 默认高度
+      const itemHeight = 48.0; // ListTile 默认高度
       var itemCount = widget.currentIndex; // 包括标题和当前章节
       final offset = itemCount >= 2
           ? (itemCount - 2) * itemHeight
@@ -58,7 +60,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    debugPrint('ChapterListDrawer build');
+    //debugPrint('ChapterListDrawer build');
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -105,7 +107,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
               child: ListView.builder(
                 controller: _scrollController,
                 itemCount: widget.chapters.length,
-                itemExtent: 40.0,
+                itemExtent: 48.0,
                 itemBuilder: (context, index) {
                   final chapter = widget.chapters[index];
                   final isCurrent = index == widget.currentIndex;
