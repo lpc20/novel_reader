@@ -1,9 +1,30 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/novel.dart';
 import '../models/reading_progress.dart';
+
+class Debouncer {
+  final Duration delay;
+  VoidCallback? _action;
+  Timer? _timer;
+
+  Debouncer({required this.delay});
+
+  void run(VoidCallback action) {
+    _action = action;
+    _timer?.cancel();
+    _timer = Timer(delay, () {
+      _action?.call();
+    });
+  }
+
+  void cancel() {
+    _timer?.cancel();
+  }
+}
 
 class BookshelfService {
   static final BookshelfService _instance = BookshelfService._internal();
@@ -13,6 +34,8 @@ class BookshelfService {
   List<Novel> _novels = [];
   Map<String, ReadingProgress> _progressMap = {};
   String? _dataPath;
+  final _progressDebouncer = Debouncer(delay: Duration(seconds: 2));
+  final _novelsDebouncer = Debouncer(delay: Duration(seconds: 2));
 
   List<Novel> get novels => List.unmodifiable(_novels);
 
@@ -48,6 +71,12 @@ class BookshelfService {
     } catch (e) {
       debugPrint('保存小说列表失败: $e');
     }
+  }
+
+  void _debouncedSaveNovels() {
+    _novelsDebouncer.run(() {
+      _saveNovels();
+    });
   }
 
   Future<void> _loadProgress() async {
@@ -90,7 +119,7 @@ class BookshelfService {
     } else {
       _novels.insert(0, novel);
     }
-    await _saveNovels();
+    _debouncedSaveNovels();
   }
 
   Future<void> removeNovel(String novelId) async {
@@ -108,15 +137,17 @@ class BookshelfService {
 
     _novels.removeWhere((novel) => novel.id == novelId);
     _progressMap.remove(novelId);
-    await _saveNovels();
-    await _saveProgress();
+    _debouncedSaveNovels();
+    _progressDebouncer.run(() {
+      _saveProgress();
+    });
   }
 
   Future<void> updateNovel(Novel novel) async {
     final index = _novels.indexWhere((n) => n.id == novel.id);
     if (index >= 0) {
       _novels[index] = novel;
-      await _saveNovels();
+      _debouncedSaveNovels();
     }
   }
 
@@ -134,14 +165,16 @@ class BookshelfService {
 
   Future<void> saveProgress(ReadingProgress progress) async {
     _progressMap[progress.novelId] = progress;
-    await _saveProgress();
+    _progressDebouncer.run(() {
+      _saveProgress();
+    });
   }
 
   Future<void> updateLastReadTime(String novelId) async {
     final index = _novels.indexWhere((n) => n.id == novelId);
     if (index >= 0) {
       _novels[index] = _novels[index].copyWith(lastReadTime: DateTime.now());
-      await _saveNovels();
+      _debouncedSaveNovels();
     }
   }
 

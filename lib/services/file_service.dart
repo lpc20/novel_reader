@@ -310,4 +310,43 @@ class FileService {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
+
+  // 清理缓存
+  void clearCache() {
+    _chapterCache.clear();
+    _contentCache.clear();
+    debugPrint('缓存已清理');
+  }
+
+  // 清理指定小说的缓存
+  void clearNovelCache(String novelId) {
+    // 清理章节缓存
+    _chapterCache.remove(novelId);
+    // 清理内容缓存（通过匹配novelId）
+    _contentCache.removeWhere((key, value) => key.contains(novelId));
+    debugPrint('小说 $novelId 的缓存已清理');
+  }
+
+  // 获取缓存大小
+  int getCacheSize() {
+    int size = 0;
+    // 计算章节缓存大小
+    for (var chapters in _chapterCache.values) {
+      size += chapters.length * 100; // 估算每个章节对象大小
+    }
+    // 计算内容缓存大小
+    for (var content in _contentCache.values) {
+      size += content.length * 2; // 估算每个字符2字节
+    }
+    return size;
+  }
+
+  // 清理超过指定大小的缓存
+  void clearCacheIfTooLarge(int maxSizeBytes) {
+    final currentSize = getCacheSize();
+    if (currentSize > maxSizeBytes) {
+      clearCache();
+      debugPrint('缓存大小超过限制，已清理');
+    }
+  }
 }
