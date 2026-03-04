@@ -45,12 +45,16 @@ class ReaderMenu extends StatefulWidget {
   final Novel novel;
   final VoidCallback onClose;
   final VoidCallback onChapterList;
+  final VoidCallback onSearch;
+  final TextEditingController searchController;
 
   const ReaderMenu({
     super.key,
     required this.novel,
     required this.onClose,
     required this.onChapterList,
+    required this.onSearch,
+    required this.searchController,
   });
 
   @override
@@ -59,6 +63,8 @@ class ReaderMenu extends StatefulWidget {
 
 class _ReaderMenuState extends State<ReaderMenu>
     with AutomaticKeepAliveClientMixin {
+  int _currentPanel = 0; // 0: 设置面板, 1: 搜索面板
+
   @override
   bool get wantKeepAlive => true;
 
@@ -72,6 +78,12 @@ class _ReaderMenuState extends State<ReaderMenu>
   void dispose() {
     debugPrint('ReaderMenu dispose');
     super.dispose();
+  }
+
+  void _switchPanel(int index) {
+    setState(() {
+      _currentPanel = index;
+    });
   }
 
   @override
@@ -150,13 +162,135 @@ class _ReaderMenuState extends State<ReaderMenu>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          RepaintBoundary(child: _buildChapterNavigation(context, data)),
+          // 面板切换按钮
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildPanelButton('设置', 0, data),
+              const SizedBox(width: 10),
+              _buildPanelButton('查找', 1, data),
+            ],
+          ),
           const SizedBox(height: 16),
-          RepaintBoundary(child: _buildFontSizeControl(context, data)),
-          const SizedBox(height: 16),
-          RepaintBoundary(child: _buildThemeSelector(context, data)),
+          // 使用 IndexedStack 切换面板
+          SizedBox(
+            height: 150,
+            child: IndexedStack(
+              index: _currentPanel,
+              children: [
+                _buildSettingsPanel(context, data),
+                _buildSearchPanel(context, data),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPanelButton(String text, int index, _MenuData data) {
+    final isSelected = _currentPanel == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _switchPanel(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.blue.withValues(alpha: 0.2)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? Colors.blue : Colors.grey[300]!,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Colors.blue : SettingsService.menuTextColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsPanel(BuildContext context, _MenuData data) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RepaintBoundary(child: _buildChapterNavigation(context, data)),
+        const SizedBox(height: 8),
+        RepaintBoundary(child: _buildFontSizeControl(context, data)),
+        const SizedBox(height: 8),
+        RepaintBoundary(child: _buildThemeSelector(context, data)),
+      ],
+    );
+  }
+
+  Widget _buildSearchPanel(BuildContext context, _MenuData data) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: widget.searchController,
+          decoration: InputDecoration(
+            hintText: '输入搜索内容',
+            hintStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: widget.onSearch,
+            ),
+          ),
+          style: const TextStyle(fontSize: 14),
+          onSubmitted: (_) => widget.onSearch(),
+        ),
+        const SizedBox(height: 8),
+        Consumer<ReaderProvider>(
+          builder: (context, provider, child) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Colors.blue),
+                  onPressed: provider.hasSearchResults
+                      ? () {
+                          provider.previousSearchResult();
+                          widget.onSearch();
+                        }
+                      : null,
+                  tooltip: '上一个',
+                ),
+                Text(
+                  provider.hasSearchResults
+                      ? '${provider.currentSearchIndex + 1}/${provider.searchResults.length}'
+                      : '无结果',
+                  style: const TextStyle(fontSize: 12, color: Colors.blue),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, color: Colors.blue),
+                  onPressed: provider.hasSearchResults
+                      ? () {
+                          provider.nextSearchResult();
+                          widget.onSearch();
+                        }
+                      : null,
+                  tooltip: '下一个',
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 

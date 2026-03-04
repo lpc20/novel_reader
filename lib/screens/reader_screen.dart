@@ -16,6 +16,9 @@ class _ReaderData {
   final bool isLoading;
   final int currentChapterIndex;
   final List<Chapter> chapters;
+  final String searchQuery;
+  final List<SearchResult> searchResults;
+  final int currentSearchIndex;
 
   const _ReaderData({
     required this.settings,
@@ -24,6 +27,9 @@ class _ReaderData {
     required this.isLoading,
     required this.currentChapterIndex,
     required this.chapters,
+    required this.searchQuery,
+    required this.searchResults,
+    required this.currentSearchIndex,
   });
 
   @override
@@ -35,7 +41,10 @@ class _ReaderData {
         other.currentChapter == currentChapter &&
         other.isLoading == isLoading &&
         other.currentChapterIndex == currentChapterIndex &&
-        listEquals(other.chapters, chapters);
+        listEquals(other.chapters, chapters) &&
+        other.searchQuery == searchQuery &&
+        listEquals(other.searchResults, searchResults) &&
+        other.currentSearchIndex == currentSearchIndex;
   }
 
   @override
@@ -46,6 +55,9 @@ class _ReaderData {
     isLoading,
     currentChapterIndex,
     chapters,
+    searchQuery,
+    searchResults,
+    currentSearchIndex,
   );
 }
 
@@ -61,6 +73,7 @@ class ReaderScreen extends StatefulWidget {
 class _ReaderScreenState extends State<ReaderScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final TextEditingController _searchController = TextEditingController();
   int? _lastScrollTimestamp;
   static const int _throttleDelay = 100; // 100ms 节流延迟
   static final progressIndicator = Center(
@@ -73,10 +86,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
       ),
     ),
   );
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchChanged);
     // 延迟加载小说，避免在构建过程中调用 notifyListeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNovel();
@@ -86,7 +101,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final provider = context.read<ReaderProvider>();
+    provider.performSearch(_searchController.text);
   }
 
   Future<void> _loadNovel() async {
@@ -148,30 +169,90 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Widget _buildContentWithParagraphs(
     List<String> paragraphs,
     ReadingSettings settings,
+    List<SearchResult> searchResults,
+    int currentSearchIndex,
   ) {
-    // 按段落分割文本
-    // final paragraphs = content
-    //     .split('\n')
-    //     .where((p) => p.trim().isNotEmpty)
-    //     .toList();
-
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        final paragraph = paragraphs[index];
+        final textSpan = _buildHighlightedText(
+          paragraph,
+          settings,
+          searchResults,
+          index,
+          currentSearchIndex,
+        );
+
         return RepaintBoundary(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 16), // 段落间距
-            child: Text(
-              paragraphs[index],
-              style: TextStyle(
-                fontSize: settings.fontSize,
-                color: ColorUtils.parseColor(settings.textColor),
-                height: settings.lineHeight,
-              ),
-            ),
+            child: RichText(text: textSpan, textAlign: TextAlign.left),
           ),
         );
       }, childCount: paragraphs.length),
     );
+  }
+
+  TextSpan _buildHighlightedText(
+    String text,
+    ReadingSettings settings,
+    List<SearchResult> searchResults,
+    int paragraphIndex,
+    int currentSearchIndex,
+  ) {
+    final textStyle = TextStyle(
+      fontSize: settings.fontSize,
+      color: ColorUtils.parseColor(settings.textColor),
+      height: settings.lineHeight,
+    );
+
+    if (searchResults.isEmpty || currentSearchIndex < 0) {
+      return TextSpan(text: text, style: textStyle);
+    }
+
+    // 查找当前段落中的搜索结果
+    final currentResult = searchResults[currentSearchIndex];
+
+    // 只高亮当前选中的搜索结果
+    if (currentResult.paragraphIndex != paragraphIndex) {
+      return TextSpan(text: text, style: textStyle);
+    }
+
+    // 构建高亮文本，只高亮当前结果
+    final spans = <TextSpan>[];
+
+    // 添加匹配前的文本
+    if (currentResult.startIndex > 0) {
+      spans.add(
+        TextSpan(
+          text: text.substring(0, currentResult.startIndex),
+          style: textStyle,
+        ),
+      );
+    }
+
+    // 添加高亮的匹配文本
+    spans.add(
+      TextSpan(
+        text: text.substring(currentResult.startIndex, currentResult.endIndex),
+        style: textStyle.copyWith(
+          backgroundColor: Colors.yellow,
+          color: Colors.black,
+        ),
+      ),
+    );
+
+    // 添加匹配后的文本
+    if (currentResult.endIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(currentResult.endIndex),
+          style: textStyle,
+        ),
+      );
+    }
+
+    return TextSpan(children: spans);
   }
 
   void _onChapterSelected(int index) {
@@ -200,6 +281,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
         isLoading: provider.isLoading,
         currentChapterIndex: provider.currentChapterIndex,
         chapters: provider.chapters,
+        searchQuery: provider.searchQuery,
+        searchResults: provider.searchResults,
+        currentSearchIndex: provider.currentSearchIndex,
       ),
       builder: (context, data, child) {
         return Scaffold(
@@ -253,6 +337,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         sliver: _buildContentWithParagraphs(
                           data.paragraphs,
                           data.settings,
+                          data.searchResults,
+                          data.currentSearchIndex,
                         ),
                       ),
                       SliverPadding(
@@ -304,6 +390,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       novel: widget.novel,
                       onClose: _toggleMenu,
                       onChapterList: _openChapterDrawer,
+                      onSearch: _onSearch,
+                      searchController: _searchController,
                     ),
                   ),
                 ),
@@ -313,5 +401,73 @@ class _ReaderScreenState extends State<ReaderScreen> {
         );
       },
     );
+  }
+
+  void _onSearch() {
+    final provider = context.read<ReaderProvider>();
+    final query = _searchController.text.trim();
+
+    if (query.isEmpty) {
+      provider.clearSearch();
+      return;
+    }
+
+    // 如果搜索查询没有变化，只滚动到当前结果
+    if (query == provider.searchQuery && provider.hasSearchResults) {
+      _scrollToSearchResult();
+    } else {
+      // 执行新搜索
+      provider.performSearch(query);
+      // 延迟滚动，等待UI更新
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToSearchResult();
+        }
+      });
+    }
+  }
+
+  void _scrollToSearchResult() {
+    final provider = context.read<ReaderProvider>();
+    if (provider.currentSearchIndex < 0 ||
+        provider.currentSearchIndex >= provider.searchResults.length) {
+      return;
+    }
+
+    final result = provider.searchResults[provider.currentSearchIndex];
+    final paragraphs = provider.getCurrentChapterContent();
+
+    if (result.paragraphIndex >= paragraphs.length) {
+      return;
+    }
+
+    // 计算目标滚动位置
+    double targetPosition = 0;
+    final lineHeight =
+        provider.settings.fontSize * provider.settings.lineHeight;
+    final paragraphSpacing = 16.0;
+    final verticalPadding = 20.0;
+
+    // 计算到目标段落的总高度
+    for (int i = 0; i < result.paragraphIndex; i++) {
+      final paragraph = paragraphs[i];
+      final estimatedLines = (paragraph.length / 20).ceil().toDouble();
+      targetPosition += lineHeight * estimatedLines + paragraphSpacing;
+    }
+
+    // 添加顶部内边距
+    targetPosition += verticalPadding;
+
+    // 滚动到目标位置，留出顶部空间
+    if (_scrollController.hasClients) {
+      final scrollPosition = _scrollController.position;
+      final targetScroll = targetPosition - 100; // 留出顶部空间
+
+      _scrollController.animateTo(
+        targetScroll.clamp(0.0, scrollPosition.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 }

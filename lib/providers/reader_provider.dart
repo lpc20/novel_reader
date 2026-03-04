@@ -18,6 +18,11 @@ class ReaderProvider extends ChangeNotifier {
   double _scrollProgress = 0.0;
   bool _showMenu = false;
 
+  // 搜索相关状态
+  String _searchQuery = '';
+  final List<SearchResult> _searchResults = [];
+  int _currentSearchIndex = -1;
+
   String get content => _content;
   List<Chapter> get chapters => _chapters;
   int get currentChapterIndex => _currentChapterIndex;
@@ -30,6 +35,10 @@ class ReaderProvider extends ChangeNotifier {
   ReadingSettings get settings => _settingsService.settings;
   bool get showMenu => _showMenu;
   String? get novelId => _novelId;
+  String get searchQuery => _searchQuery;
+  List<SearchResult> get searchResults => _searchResults;
+  int get currentSearchIndex => _currentSearchIndex;
+  bool get hasSearchResults => _searchResults.isNotEmpty;
 
   Future<void> loadNovel(
     String novelId,
@@ -152,4 +161,92 @@ class ReaderProvider extends ChangeNotifier {
     await _settingsService.setTheme(index);
     notifyListeners();
   }
+
+  // 搜索相关方法
+  void performSearch(String query) {
+    _searchQuery = query;
+    _currentSearchIndex = -1;
+
+    if (query.isEmpty) {
+      _searchResults.clear();
+      notifyListeners();
+      return;
+    }
+
+    final paragraphs = getCurrentChapterContent();
+    _searchResults.clear();
+
+    for (int i = 0; i < paragraphs.length; i++) {
+      final paragraph = paragraphs[i];
+      int startIndex = 0;
+      while (startIndex < paragraph.length) {
+        final index = paragraph.indexOf(query, startIndex);
+        if (index == -1) break;
+
+        _searchResults.add(
+          SearchResult(
+            paragraphIndex: i,
+            startIndex: index,
+            endIndex: index + query.length,
+          ),
+        );
+
+        startIndex = index + query.length;
+      }
+    }
+
+    // 如果有搜索结果，自动选中第一个
+    if (_searchResults.isNotEmpty) {
+      _currentSearchIndex = 0;
+    }
+
+    notifyListeners();
+  }
+
+  void nextSearchResult() {
+    if (_searchResults.isEmpty) return;
+
+    _currentSearchIndex = (_currentSearchIndex + 1) % _searchResults.length;
+    notifyListeners();
+  }
+
+  void previousSearchResult() {
+    if (_searchResults.isEmpty) return;
+
+    _currentSearchIndex =
+        (_currentSearchIndex - 1 + _searchResults.length) %
+        _searchResults.length;
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _searchResults.clear();
+    _currentSearchIndex = -1;
+    notifyListeners();
+  }
+}
+
+class SearchResult {
+  final int paragraphIndex;
+  final int startIndex;
+  final int endIndex;
+
+  const SearchResult({
+    required this.paragraphIndex,
+    required this.startIndex,
+    required this.endIndex,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SearchResult &&
+        other.paragraphIndex == paragraphIndex &&
+        other.startIndex == startIndex &&
+        other.endIndex == endIndex;
+  }
+
+  @override
+  int get hashCode => Object.hash(paragraphIndex, startIndex, endIndex);
 }
