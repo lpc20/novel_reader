@@ -4,16 +4,39 @@ import '../models/reading_progress.dart';
 import '../services/bookshelf_service.dart';
 import '../services/file_service.dart';
 
+enum SortType { byAddTime, byTitle, byFileSize, byLastRead }
+
 class BookshelfProvider extends ChangeNotifier {
   final BookshelfService _bookshelfService = BookshelfService();
   final FileService _fileService = FileService();
 
-  List<Novel> get novels => _bookshelfService.novels;
+  List<Novel> get novels => _sortedNovels;
   bool _isLoading = false;
   String? _error;
+  SortType _currentSortType = SortType.byAddTime;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+  SortType get currentSortType => _currentSortType;
+
+  List<Novel> get _sortedNovels {
+    final novels = _bookshelfService.novels;
+    switch (_currentSortType) {
+      case SortType.byAddTime:
+        return List.from(novels); // 保持原始顺序（添加时间）
+      case SortType.byTitle:
+        return List.from(novels)..sort((a, b) => a.title.compareTo(b.title));
+      case SortType.byFileSize:
+        return List.from(novels)
+          ..sort((a, b) => b.fileSize.compareTo(a.fileSize));
+      case SortType.byLastRead:
+        return List.from(novels)..sort(
+          (a, b) => (b.lastReadTime ?? DateTime(1970)).compareTo(
+            a.lastReadTime ?? DateTime(1970),
+          ),
+        );
+    }
+  }
 
   Future<void> init() async {
     _isLoading = true;
@@ -80,5 +103,10 @@ class BookshelfProvider extends ChangeNotifier {
 
   Future<void> saveProgress(ReadingProgress progress) async {
     await _bookshelfService.saveProgress(progress);
+  }
+
+  void setSortType(SortType type) {
+    _currentSortType = type;
+    notifyListeners();
   }
 }

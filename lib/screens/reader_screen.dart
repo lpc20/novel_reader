@@ -70,10 +70,12 @@ class ReaderScreen extends StatefulWidget {
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
 
-class _ReaderScreenState extends State<ReaderScreen> {
+class _ReaderScreenState extends State<ReaderScreen>
+    with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  late AnimationController _menuAnimationController;
   int? _lastScrollTimestamp;
   static const int _throttleDelay = 100; // 100ms 节流延迟
   static final progressIndicator = Center(
@@ -92,6 +94,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
+    _menuAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     // 延迟加载小说，避免在构建过程中调用 notifyListeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNovel();
@@ -102,6 +108,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _menuAnimationController.dispose();
     super.dispose();
   }
 
@@ -158,6 +165,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   void _toggleMenu() {
     final readerProvider = Provider.of<ReaderProvider>(context, listen: false);
+    if (readerProvider.showMenu) {
+      _menuAnimationController.reverse();
+    } else {
+      _menuAnimationController.forward(from: 0);
+    }
     readerProvider.toggleMenu();
   }
 
@@ -185,8 +197,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
         return RepaintBoundary(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 16), // 段落间距
-            child: RichText(text: textSpan, textAlign: TextAlign.left),
+            padding: EdgeInsets.only(bottom: 16),
+            child: RichText(text: textSpan, softWrap: true),
           ),
         );
       }, childCount: paragraphs.length),
@@ -204,6 +216,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       fontSize: settings.fontSize,
       color: ColorUtils.parseColor(settings.textColor),
       height: settings.lineHeight,
+      fontFamily: settings.fontFamily == 'system' ? null : settings.fontFamily,
     );
 
     if (searchResults.isEmpty || currentSearchIndex < 0) {
@@ -298,101 +311,238 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 if (data.isLoading)
                   progressIndicator
                 else
-                  CustomScrollView(
-                    key: ValueKey('content_${data.currentChapterIndex}'),
-                    controller: _scrollController,
-                    slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 20,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (data.currentChapter != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: Text(
-                                    data.currentChapter!.title,
-                                    style: TextStyle(
-                                      fontSize: data.settings.fontSize + 4,
-                                      fontWeight: FontWeight.bold,
-                                      color: ColorUtils.parseColor(
-                                        data.settings.textColor,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: CustomScrollView(
+                      key: ValueKey('content_${data.currentChapterIndex}'),
+                      controller: _scrollController,
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 20,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                if (data.currentChapter != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 24),
+                                    child: Text(
+                                      data.currentChapter!.title,
+                                      style: TextStyle(
+                                        fontSize: data.settings.fontSize + 6,
+                                        fontWeight: FontWeight.w700,
+                                        color: ColorUtils.parseColor(
+                                          data.settings.textColor,
+                                        ),
+                                        height: 1.3,
+                                        letterSpacing: 1.0,
+                                        fontFamily:
+                                            data.settings.fontFamily == 'system'
+                                            ? null
+                                            : data.settings.fontFamily,
                                       ),
-                                      height: data.settings.lineHeight,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    textAlign: TextAlign.left,
+                                  ),
+                                if (data.currentChapter != null)
+                                  Container(
+                                    height: 1,
+                                    width: 80,
+                                    color: ColorUtils.parseColor(
+                                      data.settings.textColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          sliver: _buildContentWithParagraphs(
+                            data.paragraphs,
+                            data.settings,
+                            data.searchResults,
+                            data.currentSearchIndex,
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 30,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // 上一章按钮
+                                Expanded(
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    child: ElevatedButton.icon(
+                                      onPressed: data.currentChapterIndex > 0
+                                          ? () => context
+                                                .read<ReaderProvider>()
+                                                .goToChapter(
+                                                  data.currentChapterIndex - 1,
+                                                )
+                                          : null,
+                                      icon: const Icon(
+                                        Icons.chevron_left,
+                                        size: 18,
+                                      ),
+                                      label: const Text('上一章'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        foregroundColor: ColorUtils.parseColor(
+                                          data.settings.textColor,
+                                        ),
+                                        side: BorderSide(
+                                          color: ColorUtils.parseColor(
+                                            data.settings.textColor,
+                                          ),
+                                          width: 1,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              if (data.currentChapter != null)
-                                const Divider(thickness: 2),
-                            ],
+                                // 章节信息
+                                Text(
+                                  '${data.currentChapterIndex + 1}/${data.chapters.length}',
+                                  style: TextStyle(
+                                    fontSize: data.settings.fontSize - 2,
+                                    color: ColorUtils.parseColor(
+                                      data.settings.textColor,
+                                    ),
+                                  ),
+                                ),
+                                // 下一章按钮
+                                Expanded(
+                                  child: Container(
+                                    margin: const EdgeInsets.only(left: 10),
+                                    child: ElevatedButton.icon(
+                                      onPressed:
+                                          data.currentChapterIndex <
+                                              data.chapters.length - 1
+                                          ? () => context
+                                                .read<ReaderProvider>()
+                                                .goToChapter(
+                                                  data.currentChapterIndex + 1,
+                                                )
+                                          : null,
+                                      icon: const Icon(
+                                        Icons.chevron_right,
+                                        size: 18,
+                                      ),
+                                      iconAlignment: IconAlignment.end,
+                                      label: const Text('下一章'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        foregroundColor: ColorUtils.parseColor(
+                                          data.settings.textColor,
+                                        ),
+                                        side: BorderSide(
+                                          color: ColorUtils.parseColor(
+                                            data.settings.textColor,
+                                          ),
+                                          width: 1,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        sliver: _buildContentWithParagraphs(
-                          data.paragraphs,
-                          data.settings,
-                          data.searchResults,
-                          data.currentSearchIndex,
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ElevatedButton(
-                                onPressed: data.currentChapterIndex > 0
-                                    ? () => context
-                                          .read<ReaderProvider>()
-                                          .goToChapter(
-                                            data.currentChapterIndex - 1,
-                                          )
-                                    : null,
-                                child: const Icon(Icons.chevron_left),
-                              ),
-                              ElevatedButton(
-                                onPressed:
-                                    data.currentChapterIndex <
-                                        data.chapters.length - 1
-                                    ? () => context
-                                          .read<ReaderProvider>()
-                                          .goToChapter(
-                                            data.currentChapterIndex + 1,
-                                          )
-                                    : null,
-                                child: const Icon(Icons.chevron_right),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                // 阅读进度指示器
+                // Positioned(
+                //   bottom: 10,
+                //   right: 20,
+                //   child: Container(
+                //     padding: const EdgeInsets.symmetric(
+                //       horizontal: 12,
+                //       vertical: 4,
+                //     ),
+                //     decoration: BoxDecoration(
+                //       color: ColorUtils.parseColor(
+                //         data.settings.backgroundColor,
+                //       ).withValues(alpha: 0.8),
+                //       borderRadius: BorderRadius.circular(12),
+                //       border: Border.all(
+                //         color: ColorUtils.parseColor(
+                //           data.settings.textColor,
+                //         ).withValues(alpha: 0.2),
+                //         width: 1,
+                //       ),
+                //     ),
+                //     child: Text(
+                //       '${(scrollProgress * 100).toStringAsFixed(0)}%',
+                //       style: TextStyle(
+                //         fontSize: 11,
+                //         color: ColorUtils.parseColor(
+                //           data.settings.textColor,
+                //         ).withValues(alpha: 0.6),
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 AnimatedOpacity(
                   opacity: context.watch<ReaderProvider>().showMenu ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
                   child: Visibility(
                     visible: context.watch<ReaderProvider>().showMenu,
                     maintainState: true,
                     maintainAnimation: true,
                     maintainSize: true,
-                    child: ReaderMenu(
-                      novel: widget.novel,
-                      onClose: _toggleMenu,
-                      onChapterList: _openChapterDrawer,
-                      onSearch: _onSearch,
-                      searchController: _searchController,
+                    child: SlideTransition(
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(0, 0.05),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: _menuAnimationController,
+                              curve: Curves.easeOutCubic,
+                            ),
+                          ),
+                      child: ReaderMenu(
+                        novel: widget.novel,
+                        onClose: _toggleMenu,
+                        onChapterList: _openChapterDrawer,
+                        onSearch: _onSearch,
+                        searchController: _searchController,
+                      ),
                     ),
                   ),
                 ),
@@ -437,32 +587,29 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
     final result = provider.searchResults[provider.currentSearchIndex];
     final paragraphs = provider.getCurrentChapterContent();
+    final targetIndex = result.paragraphIndex;
 
-    if (result.paragraphIndex >= paragraphs.length) {
+    if (targetIndex >= paragraphs.length) {
       return;
     }
 
-    // 计算目标滚动位置
     double targetPosition = 0;
     final lineHeight =
         provider.settings.fontSize * provider.settings.lineHeight;
     final paragraphSpacing = 16.0;
     final verticalPadding = 20.0;
 
-    // 计算到目标段落的总高度
-    for (int i = 0; i < result.paragraphIndex; i++) {
+    for (int i = 0; i < targetIndex; i++) {
       final paragraph = paragraphs[i];
       final estimatedLines = (paragraph.length / 20).ceil().toDouble();
       targetPosition += lineHeight * estimatedLines + paragraphSpacing;
     }
 
-    // 添加顶部内边距
     targetPosition += verticalPadding;
 
-    // 滚动到目标位置，留出顶部空间
     if (_scrollController.hasClients) {
       final scrollPosition = _scrollController.position;
-      final targetScroll = targetPosition - 100; // 留出顶部空间
+      final targetScroll = targetPosition - 100;
 
       _scrollController.animateTo(
         targetScroll.clamp(0.0, scrollPosition.maxScrollExtent),

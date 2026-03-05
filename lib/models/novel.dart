@@ -19,6 +19,8 @@ class Novel {
   final int totalChapters;
   //小说封面颜色
   final String coverColor;
+  //小说阅读进度（0-1）
+  final double lastReadProgress;
 
   Novel({
     required this.id,
@@ -30,6 +32,7 @@ class Novel {
     this.lastReadTime,
     this.totalChapters = 0,
     this.coverColor = '#4A90D9',
+    this.lastReadProgress = 0.0,
   });
 
   Novel copyWith({
@@ -42,6 +45,7 @@ class Novel {
     DateTime? lastReadTime,
     int? totalChapters,
     String? coverColor,
+    double? lastReadProgress,
   }) {
     return Novel(
       id: id ?? this.id,
@@ -53,6 +57,7 @@ class Novel {
       lastReadTime: lastReadTime ?? this.lastReadTime,
       totalChapters: totalChapters ?? this.totalChapters,
       coverColor: coverColor ?? this.coverColor,
+      lastReadProgress: lastReadProgress ?? this.lastReadProgress,
     );
   }
 
@@ -67,6 +72,7 @@ class Novel {
       'lastReadTime': lastReadTime?.toIso8601String(),
       'totalChapters': totalChapters,
       'coverColor': coverColor,
+      'lastReadProgress': lastReadProgress,
     };
   }
 
@@ -83,6 +89,7 @@ class Novel {
           : null,
       totalChapters: map['totalChapters'] as int? ?? 0,
       coverColor: map['coverColor'] as String? ?? '#4A90D9',
+      lastReadProgress: map['lastReadProgress'] as double? ?? 0.0,
     );
   }
 
@@ -99,5 +106,12 @@ class Novel {
     } else {
       return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
+  }
+
+  int get chaptersCount => totalChapters;
+
+  @override
+  String toString() {
+    return 'Novel(title: $title, chapters: $totalChapters, size: $fileSizeFormatted)';
   }
 }

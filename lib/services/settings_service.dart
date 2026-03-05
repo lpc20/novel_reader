@@ -71,20 +71,46 @@ class SettingsService {
 
   ReadingSettings get settings => _settings;
 
+  // 支持的字体列表
+  static const List<String> fontFamilies = [
+    'system',
+    'serif',
+    'sans-serif',
+    'monospace',
+    'cursive',
+    'fantasy',
+  ];
+
+  // 字体名称映射
+  static const Map<String, String> fontFamilyNames = {
+    'system': '系统默认',
+    'serif': '衬线字体',
+    'sans-serif': '无衬线字体',
+    'monospace': '等宽字体',
+    'cursive': '手写体',
+    'fantasy': '艺术字体',
+  };
+
   static const List<Map<String, String>> themes = [
-    {'name': '护眼', 'bg': '#CCE8CF', 'text': '#2C4A2E'},
-    {'name': '羊皮纸', 'bg': '#F5F5DC', 'text': '#333333'},
+    {'name': '护眼', 'bg': '#F0F8F0', 'text': '#2E7D32'},
+    {'name': '羊皮纸', 'bg': '#F5F0E6', 'text': '#4A4A4A'},
     {'name': '夜间', 'bg': '#1A1A1A', 'text': '#E0E0E0'},
     {'name': '白色', 'bg': '#FFFFFF', 'text': '#333333'},
+    {'name': '深蓝', 'bg': '#E3F2FD', 'text': '#1976D2'},
+    {'name': '复古', 'bg': '#FFF8E1', 'text': '#D84315'},
+    {'name': '浅灰', 'bg': '#F5F5F5', 'text': '#424242'},
+    {'name': '薄荷', 'bg': '#E0F2F1', 'text': '#00796B'},
+    {'name': '薰衣草', 'bg': '#F3E5F5', 'text': '#7B1FA2'},
+    {'name': '日出', 'bg': '#FFF3E0', 'text': '#E65100'},
   ];
 
   // 菜单颜色 - 使用深色主题
-  static const Color menuBackgroundColor = Color(0xFF2C3E50);
-  static const Color menuTextColor = Color(0xFFECF0F1);
-  static const Color menuIconColor = Color(0xFF95A5A6);
-  static const Color menuSecondaryTextColor = Color(0xFFBDC3C7);
-  static const Color menuDividerColor = Color(0xFF34495E);
-  static const Color menuHighlightColor = Color(0xFF3498DB);
+  static const Color menuBackgroundColor = Color(0xFF1E293B);
+  static const Color menuTextColor = Color(0xFFF8FAFC);
+  static const Color menuIconColor = Color(0xFF94A3B8);
+  static const Color menuSecondaryTextColor = Color(0xFFCBD5E1);
+  static const Color menuDividerColor = Color(0xFF334155);
+  static const Color menuHighlightColor = Color(0xFF3B82F6);
   static const Color menuHighlightTextColor = Color(0xFFFFFFFF);
 
   Future<void> init() async {
@@ -130,6 +156,11 @@ class SettingsService {
 
   Future<void> setLineHeight(double height) async {
     _settings = _settings.copyWith(lineHeight: height);
+    await _saveSettings();
+  }
+
+  Future<void> setFontFamily(String fontFamily) async {
+    _settings = _settings.copyWith(fontFamily: fontFamily);
     await _saveSettings();
   }
 }

@@ -25,93 +25,57 @@ class FileService {
   // 文件内容缓存
   final Map<String, String> _contentCache = {};
 
-  // Future<String> detectEncoding(String filePath) async {
-  //   final file = File(filePath);
-  //   final bytes = await file.readAsBytes();
-
-  //   if (bytes.length < 3) return 'UTF-8';
-
-  //   if (bytes[0] == 0xFF && bytes[1] == 0xFE) {
-  //     return 'UTF-16LE';
-  //   }
-  //   if (bytes[0] == 0xFE && bytes[1] == 0xFF) {
-  //     return 'UTF-16BE';
-  //   }
-  //   if (bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
-  //     return 'UTF-8';
-  //   }
-  //   bool isUtf8 = true;
-  //   int i = 0;
-  //   while (i < bytes.length && i < 10000) {
-  //     int byte = bytes[i];
-  //     if (byte < 0x80) {
-  //       i++;
-  //       continue;
-  //     }
-  //     int seqLen;
-  //     if ((byte & 0xE0) == 0xC0) {
-  //       seqLen = 2;
-  //     } else if ((byte & 0xF0) == 0xE0) {
-  //       seqLen = 3;
-  //     } else if ((byte & 0xF8) == 0xF0) {
-  //       seqLen = 4;
-  //     } else {
-  //       isUtf8 = false;
-  //       break;
-  //     }
-  //     if (i + seqLen > bytes.length) {
-  //       isUtf8 = false;
-  //       break;
-  //     }
-  //     for (int j = 1; j < seqLen; j++) {
-  //       if ((bytes[i + j] & 0xC0) != 0x80) {
-  //         isUtf8 = false;
-  //         break;
-  //       }
-  //     }
-  //     if (!isUtf8) break;
-  //     i += seqLen;
-  //   }
-  //   if (isUtf8) return 'UTF-8';
-  //   return 'GBK';
-  // }
-
   Future<String> detectEncoding(String filePath) async {
     final file = File(filePath);
     final length = await file.length();
 
     if (length == 0) return 'UTF-8';
 
-    // 只读前 32KB（足够检测 BOM 和 UTF-8 结构）
-    final readLength = min(length, 32 * 1024);
-    final stream = file.openRead(0, readLength);
-    // 合并所有 chunk 为 Uint8List
-    final chunks = await stream.toList();
-    final bytes = Uint8List(chunks.fold(0, (sum, chunk) => sum + chunk.length));
-    int offset = 0;
-    for (final chunk in chunks) {
-      bytes.setRange(offset, offset + chunk.length, chunk);
-      offset += chunk.length;
-    }
-    // 1. 检查 BOM
-    if (bytes.length >= 3 &&
-        bytes[0] == 0xEF &&
-        bytes[1] == 0xBB &&
-        bytes[2] == 0xBF) {
+    final bytes = await file.readAsBytes();
+
+    if (bytes.length < 3) return 'UTF-8';
+
+    if (bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
       return 'UTF-8';
     }
-    if (bytes.length >= 2) {
-      if (bytes[0] == 0xFF && bytes[1] == 0xFE) return 'UTF-16LE';
-      if (bytes[0] == 0xFE && bytes[1] == 0xFF) return 'UTF-16BE';
+    if (bytes[0] == 0xFF && bytes[1] == 0xFE) {
+      return 'UTF-16LE';
+    }
+    if (bytes[0] == 0xFE && bytes[1] == 0xFF) {
+      return 'UTF-16BE';
     }
 
-    // 2. 尝试 UTF-8 合法性检测
     if (_isValidUtf8(bytes)) {
-      return 'UTF-8';
+      try {
+        utf8.decode(bytes);
+        return 'UTF-8';
+      } catch (e) {
+        debugPrint('UTF-8 解码验证失败: $e');
+      }
     }
 
-    // 3. 回退到 GBK（中文小说场景合理）
-    return 'GBK';
+    try {
+      await CharsetConverter.decode('gbk', bytes);
+      return 'GBK';
+    } catch (e) {
+      debugPrint('GBK 解码验证失败: $e');
+    }
+
+    try {
+      await CharsetConverter.decode('gb18030', bytes);
+      return 'GB18030';
+    } catch (e) {
+      debugPrint('GB18030 解码验证失败: $e');
+    }
+
+    try {
+      await CharsetConverter.decode('big5', bytes);
+      return 'BIG5';
+    } catch (e) {
+      debugPrint('BIG5 解码验证失败: $e');
+    }
+
+    return 'UTF-8';
   }
 
   bool _isValidUtf8(Uint8List bytes) {
@@ -153,10 +117,8 @@ class FileService {
   }
 
   Future<String> readFileContent(String filePath, String encoding) async {
-    // 生成缓存键（文件路径 + 编码）
     final cacheKey = '$filePath:$encoding';
 
-    // 检查缓存
     if (_contentCache.containsKey(cacheKey)) {
       return _contentCache[cacheKey]!;
     }
@@ -165,6 +127,7 @@ class FileService {
     final bytes = await file.readAsBytes();
 
     String content;
+    debugPrint('检测到编码: $encoding');
     if (encoding.toUpperCase() == 'UTF-8') {
       content = utf8.decode(bytes);
     } else if (encoding.toUpperCase() == 'GBK') {
@@ -172,6 +135,18 @@ class FileService {
         content = await CharsetConverter.decode('gbk', bytes);
       } catch (e) {
         content = 'GBK解码失败,小说txt已损坏';
+      }
+    } else if (encoding.toUpperCase() == 'GB18030') {
+      try {
+        content = await CharsetConverter.decode('gb18030', bytes);
+      } catch (e) {
+        content = 'GB18030解码失败,小说txt已损坏';
+      }
+    } else if (encoding.toUpperCase() == 'BIG5') {
+      try {
+        content = await CharsetConverter.decode('big5', bytes);
+      } catch (e) {
+        content = 'BIG5解码失败,小说txt已损坏';
       }
     } else if (encoding.toUpperCase() == 'UTF-16LE') {
       content = String.fromCharCodes(bytes);
@@ -181,7 +156,6 @@ class FileService {
       content = utf8.decode(bytes);
     }
 
-    // 缓存结果
     _contentCache[cacheKey] = content;
     return content;
   }
@@ -217,6 +191,20 @@ class FileService {
         );
       }
     } else {
+      int index = 0;
+
+      if (allMatches.first.start > 0) {
+        chapters.add(
+          Chapter(
+            index: index,
+            title: '前言',
+            startPosition: 0,
+            endPosition: allMatches.first.start,
+          ),
+        );
+        index++;
+      }
+
       for (int i = 0; i < allMatches.length; i++) {
         final match = allMatches[i];
         int start = match.start;
@@ -231,12 +219,13 @@ class FileService {
 
         chapters.add(
           Chapter(
-            index: i,
+            index: index,
             title: title,
             startPosition: start,
             endPosition: end,
           ),
         );
+        index++;
       }
     }
     return chapters;

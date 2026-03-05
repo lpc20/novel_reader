@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/chapter.dart';
 import '../models/reading_progress.dart';
+import '../models/bookmark.dart';
+import '../models/note.dart';
 import '../services/file_service.dart';
 import '../services/settings_service.dart';
 import '../services/bookshelf_service.dart';
+import '../services/bookmarks_service.dart';
 
 class ReaderProvider extends ChangeNotifier {
   final FileService _fileService = FileService();
   final SettingsService _settingsService = SettingsService();
   final BookshelfService _bookshelfService = BookshelfService();
+  final BookmarksService _bookmarksService = BookmarksService();
 
   String _content = '';
   List<Chapter> _chapters = [];
@@ -96,11 +100,11 @@ class ReaderProvider extends ChangeNotifier {
       }
       return contentWithoutTitle
           .split('\n')
-          .where((p) => p.trim().isNotEmpty)
+          .where((p) => p.isNotEmpty)
           .toList();
     }
 
-    return fullContent.split('\n').where((p) => p.trim().isNotEmpty).toList();
+    return fullContent.split('\n').where((p) => p.isNotEmpty).toList();
   }
 
   void goToChapter(int index) {
@@ -154,6 +158,11 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> setLineHeight(double height) async {
     await _settingsService.setLineHeight(height);
+    notifyListeners();
+  }
+
+  Future<void> setFontFamily(String fontFamily) async {
+    await _settingsService.setFontFamily(fontFamily);
     notifyListeners();
   }
 
@@ -224,6 +233,95 @@ class ReaderProvider extends ChangeNotifier {
     _searchResults.clear();
     _currentSearchIndex = -1;
     notifyListeners();
+  }
+
+  // 书签相关方法
+  Future<void> addBookmark() async {
+    if (_novelId == null || currentChapter == null) return;
+
+    final paragraphs = getCurrentChapterContent();
+    String contentPreview = '';
+    if (paragraphs.isNotEmpty) {
+      contentPreview = paragraphs.first.length > 50
+          ? '${paragraphs.first.substring(0, 50)}...'
+          : paragraphs.first;
+    }
+
+    final bookmark = Bookmark(
+      id: '${_novelId}_${DateTime.now().millisecondsSinceEpoch}',
+      novelId: _novelId!,
+      chapterIndex: _currentChapterIndex,
+      chapterTitle: currentChapter!.title,
+      scrollProgress: _scrollProgress,
+      contentPreview: contentPreview,
+      createdAt: DateTime.now(),
+    );
+
+    await _bookmarksService.addBookmark(bookmark);
+    notifyListeners();
+  }
+
+  Future<void> removeBookmark(String bookmarkId) async {
+    await _bookmarksService.removeBookmark(bookmarkId);
+    notifyListeners();
+  }
+
+  List<Bookmark> getBookmarks() {
+    if (_novelId == null) return [];
+    return _bookmarksService.getBookmarks(_novelId!);
+  }
+
+  // 笔记相关方法
+  Future<void> addNote(String content, String noteText) async {
+    if (_novelId == null || currentChapter == null) return;
+
+    final note = Note(
+      id: '${_novelId}_${DateTime.now().millisecondsSinceEpoch}',
+      novelId: _novelId!,
+      chapterIndex: _currentChapterIndex,
+      chapterTitle: currentChapter!.title,
+      scrollProgress: _scrollProgress,
+      content: content,
+      noteText: noteText,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _bookmarksService.addNote(note);
+    notifyListeners();
+  }
+
+  Future<void> updateNote(String noteId, String noteText) async {
+    final notes = _bookmarksService.getNotes(_novelId!);
+    final note = notes.firstWhere(
+      (n) => n.id == noteId,
+      orElse: () => throw Exception('Note not found'),
+    );
+
+    final updatedNote = Note(
+      id: note.id,
+      novelId: note.novelId,
+      chapterIndex: note.chapterIndex,
+      chapterTitle: note.chapterTitle,
+      scrollProgress: note.scrollProgress,
+      content: note.content,
+      noteText: noteText,
+      createdAt: note.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    await _bookmarksService.updateNote(updatedNote);
+    notifyListeners();
+  }
+
+  Future<void> removeNote(String noteId) async {
+    await _bookmarksService.removeNote(noteId);
+    notifyListeners();
+  }
+
+  List<Note> getNotes() {
+    if (_novelId == null) return [];
+    return _bookmarksService.getNotes(_novelId!);
   }
 }
 
