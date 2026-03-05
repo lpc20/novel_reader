@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/chapter.dart';
 import '../models/reading_progress.dart';
 import '../models/bookmark.dart';
-import '../models/note.dart';
 import '../services/file_service.dart';
 import '../services/settings_service.dart';
 import '../services/bookshelf_service.dart';
@@ -269,59 +268,6 @@ class ReaderProvider extends ChangeNotifier {
   List<Bookmark> getBookmarks() {
     if (_novelId == null) return [];
     return _bookmarksService.getBookmarks(_novelId!);
-  }
-
-  // 笔记相关方法
-  Future<void> addNote(String content, String noteText) async {
-    if (_novelId == null || currentChapter == null) return;
-
-    final note = Note(
-      id: '${_novelId}_${DateTime.now().millisecondsSinceEpoch}',
-      novelId: _novelId!,
-      chapterIndex: _currentChapterIndex,
-      chapterTitle: currentChapter!.title,
-      scrollProgress: _scrollProgress,
-      content: content,
-      noteText: noteText,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    await _bookmarksService.addNote(note);
-    notifyListeners();
-  }
-
-  Future<void> updateNote(String noteId, String noteText) async {
-    final notes = _bookmarksService.getNotes(_novelId!);
-    final note = notes.firstWhere(
-      (n) => n.id == noteId,
-      orElse: () => throw Exception('Note not found'),
-    );
-
-    final updatedNote = Note(
-      id: note.id,
-      novelId: note.novelId,
-      chapterIndex: note.chapterIndex,
-      chapterTitle: note.chapterTitle,
-      scrollProgress: note.scrollProgress,
-      content: note.content,
-      noteText: noteText,
-      createdAt: note.createdAt,
-      updatedAt: DateTime.now(),
-    );
-
-    await _bookmarksService.updateNote(updatedNote);
-    notifyListeners();
-  }
-
-  Future<void> removeNote(String noteId) async {
-    await _bookmarksService.removeNote(noteId);
-    notifyListeners();
-  }
-
-  List<Note> getNotes() {
-    if (_novelId == null) return [];
-    return _bookmarksService.getNotes(_novelId!);
   }
 }
 
