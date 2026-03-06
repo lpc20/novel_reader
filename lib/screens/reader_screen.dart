@@ -216,6 +216,7 @@ class _ReaderScreenState extends State<ReaderScreen>
       fontSize: settings.fontSize,
       color: ColorUtils.parseColor(settings.textColor),
       height: settings.lineHeight,
+      fontWeight: FontWeight.normal,
       fontFamily: settings.fontFamily == 'system' ? null : settings.fontFamily,
     );
 
@@ -353,9 +354,8 @@ class _ReaderScreenState extends State<ReaderScreen>
                                     ),
                                   ),
                                 if (data.currentChapter != null)
-                                  Container(
-                                    height: 1,
-                                    width: 80,
+                                  Divider(
+                                    height: 2,
                                     color: ColorUtils.parseColor(
                                       data.settings.textColor,
                                     ),

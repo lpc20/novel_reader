@@ -196,7 +196,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('我的书架'),
+        title: Text('我的书架'),
         centerTitle: true,
         backgroundColor: SettingsService.menuBackgroundColor,
         foregroundColor: SettingsService.menuTextColor,
@@ -266,7 +266,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                     label: const Text('导入小说'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: SettingsService.menuHighlightColor,
-                      foregroundColor: SettingsService.menuHighlightTextColor,
+                      foregroundColor: SettingsService.menuTextColor,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
                         vertical: 12,

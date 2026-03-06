@@ -70,6 +70,7 @@ class _ReaderMenuState extends State<ReaderMenu>
   late TabController _tabController;
 
   int _currentTabIndex = 0;
+  double? _sliderValue;
 
   @override
   bool get wantKeepAlive => true;
@@ -97,6 +98,7 @@ class _ReaderMenuState extends State<ReaderMenu>
 
   @override
   Widget build(BuildContext context) {
+    //_currentTabIndex = 0;
     super.build(context);
     return Selector<ReaderProvider, _MenuData>(
       selector: (context, provider) => _MenuData(
@@ -133,9 +135,14 @@ class _ReaderMenuState extends State<ReaderMenu>
           IconButton(
             icon: const Icon(
               Icons.arrow_back,
-              color: SettingsService.menuTextColor,
+              color: SettingsService.menuIconColor,
             ),
             onPressed: () {
+              final readerProvider = Provider.of<ReaderProvider>(
+                context,
+                listen: false,
+              );
+              readerProvider.toggleMenu();
               Navigator.pop(context);
             },
           ),
@@ -144,14 +151,14 @@ class _ReaderMenuState extends State<ReaderMenu>
               widget.novel.title,
               style: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                //fontWeight: FontWeight.bold,
                 color: SettingsService.menuTextColor,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.menu, color: SettingsService.menuTextColor),
+            icon: const Icon(Icons.menu, color: SettingsService.menuIconColor),
             onPressed: widget.onChapterList,
             tooltip: '目录',
           ),
@@ -187,38 +194,32 @@ class _ReaderMenuState extends State<ReaderMenu>
               ],
             ),
           ),
-          // 底部分割线
+          //底部分割线
           Container(
             height: 1,
-            color: SettingsService.menuDividerColor,
-            margin: const EdgeInsets.symmetric(vertical: 12),
+            color: SettingsService.menuIconColor,
+            margin: const EdgeInsets.symmetric(vertical: 2),
           ),
           // TabBar 放在底部，使用图标+文字
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
               controller: _tabController,
-              indicator: BoxDecoration(
-                color: SettingsService.menuHighlightColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
+              indicatorColor: SettingsService.menuHighlightColor,
               indicatorSize: TabBarIndicatorSize.tab,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 12),
-              labelColor: SettingsService.menuHighlightTextColor,
-              unselectedLabelColor: SettingsService.menuSecondaryTextColor,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+              // labelColor: SettingsService.menuTextColor,
+              unselectedLabelColor: SettingsService.menuIconColor,
               labelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: SettingsService.menuTextColor,
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              unselectedLabelStyle: const TextStyle(fontSize: 12),
               tabs: const [
-                Tab(icon: Icon(Icons.menu_book, size: 16), text: '目录'),
-                Tab(icon: Icon(Icons.settings, size: 16), text: '设置'),
-                Tab(icon: Icon(Icons.search, size: 16), text: '查找'),
-                Tab(icon: Icon(Icons.bookmark, size: 16), text: '书签'),
+                Tab(icon: Icon(Icons.menu_book_outlined, size: 16), text: '目录'),
+                Tab(icon: Icon(Icons.settings_outlined, size: 16), text: '设置'),
+                Tab(icon: Icon(Icons.search_outlined, size: 16), text: '查找'),
+                Tab(icon: Icon(Icons.bookmark_outlined, size: 16), text: '书签'),
               ],
               onTap: (index) {
                 setState(() {
@@ -235,6 +236,7 @@ class _ReaderMenuState extends State<ReaderMenu>
 
   Widget _buildSettingsPanel(BuildContext context, _MenuData data) {
     return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.35,
       ),
@@ -245,55 +247,63 @@ class _ReaderMenuState extends State<ReaderMenu>
           children: [
             RepaintBoundary(child: _buildFontSizeControl(context, data)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _buildFontSelector(context, data)),
-                const SizedBox(width: 20),
-                Expanded(child: _buildThemeSelector(context, data)),
-              ],
-            ),
+            RepaintBoundary(child: _buildFontAndTheme(context, data)),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildFontAndTheme(BuildContext context, _MenuData data) {
+    return Row(
+      children: [
+        Expanded(child: _buildFontSelector(context, data)),
+        const SizedBox(width: 12),
+        Expanded(child: _buildThemeSelector(context, data)),
+      ],
+    );
+  }
+
   Widget _buildFontSelector(BuildContext context, _MenuData data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Text(
           '字体',
           style: TextStyle(fontSize: 12, color: SettingsService.menuTextColor),
         ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: SettingsService.menuDividerColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButton<String>(
-            value: data.fontFamily,
-            isExpanded: true,
-            dropdownColor: SettingsService.menuDividerColor,
-            underline: const SizedBox(),
-            style: const TextStyle(
-              fontSize: 12,
-              color: SettingsService.menuTextColor,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: SettingsService.buttonTextColor,
+              borderRadius: BorderRadius.circular(8),
             ),
-            items: SettingsService.fontFamilies.map((font) {
-              return DropdownMenuItem(
-                value: font,
-                child: Text(SettingsService.fontFamilyNames[font]!),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                context.read<ReaderProvider>().setFontFamily(value);
-              }
-            },
+            child: DropdownButton<String>(
+              value: data.fontFamily,
+              isExpanded: true,
+              dropdownColor: SettingsService.buttonTextColor,
+              underline: const SizedBox(),
+              style: const TextStyle(
+                fontSize: 12,
+                color: SettingsService.menuTextColor,
+              ),
+              items: SettingsService.fontFamilies.map((font) {
+                return DropdownMenuItem(
+                  value: font,
+                  child: Text(
+                    SettingsService.fontFamilyNames[font]!,
+                    style: TextStyle(fontSize: 12, fontFamily: font),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  context.read<ReaderProvider>().setFontFamily(value);
+                }
+              },
+            ),
           ),
         ),
       ],
@@ -301,59 +311,62 @@ class _ReaderMenuState extends State<ReaderMenu>
   }
 
   Widget _buildThemeSelector(BuildContext context, _MenuData data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Text(
           '主题',
           style: TextStyle(fontSize: 12, color: SettingsService.menuTextColor),
         ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: SettingsService.menuDividerColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButton<int>(
-            value: data.themeIndex,
-            isExpanded: true,
-            dropdownColor: SettingsService.menuDividerColor,
-            underline: const SizedBox(),
-            style: const TextStyle(
-              fontSize: 12,
-              color: SettingsService.menuTextColor,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: SettingsService.buttonTextColor,
+              borderRadius: BorderRadius.circular(8),
             ),
-            items: SettingsService.themes.asMap().entries.map((entry) {
-              final index = entry.key;
-              final theme = entry.value;
-              return DropdownMenuItem(
-                value: index,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: ColorUtils.parseColor(theme['bg']!),
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                          color: SettingsService.menuSecondaryTextColor,
+            child: DropdownButton<int>(
+              value: data.themeIndex,
+              isExpanded: true,
+              dropdownColor: SettingsService.buttonTextColor,
+              underline: const SizedBox(),
+              style: const TextStyle(
+                fontSize: 12,
+                color: SettingsService.menuTextColor,
+              ),
+              items: SettingsService.themes.asMap().entries.map((entry) {
+                final index = entry.key;
+                final theme = entry.value;
+                return DropdownMenuItem(
+                  value: index,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: ColorUtils.parseColor(theme['bg']!),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(theme['name']!),
-                  ],
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                context.read<ReaderProvider>().setTheme(value);
-              }
-            },
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          theme['name']!,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  context.read<ReaderProvider>().setTheme(value);
+                }
+              },
+            ),
           ),
         ),
       ],
@@ -379,104 +392,78 @@ class _ReaderMenuState extends State<ReaderMenu>
           child: TextField(
             controller: widget.searchController,
             decoration: InputDecoration(
-              hintText: '输入搜索内容',
+              hintText: '搜索',
               hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
               border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
+              // enabledBorder: InputBorder.none,
+              // focusedBorder: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
               ),
-              suffixIcon: Container(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: widget.onSearch,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: SettingsService.menuHighlightColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.search,
-                      color: SettingsService.menuHighlightTextColor,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
+              prefixIcon: const Icon(Icons.search, size: 16),
             ),
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            // style: const TextStyle(fontSize: 14, color: Colors.black87),
             onSubmitted: (_) => widget.onSearch(),
           ),
         ),
-        const SizedBox(height: 16),
+        // const SizedBox(height: 16),
         Consumer<ReaderProvider>(
           builder: (context, provider, child) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.chevron_left, size: 16),
-                  label: const Text('上一个', style: TextStyle(fontSize: 12)),
-                  onPressed: provider.hasSearchResults
-                      ? () {
-                          provider.previousSearchResult();
-                          widget.onSearch();
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: SettingsService.menuHighlightColor,
-                    foregroundColor: SettingsService.menuHighlightTextColor,
-                    disabledBackgroundColor: SettingsService.menuDividerColor,
-                    disabledForegroundColor:
-                        SettingsService.menuSecondaryTextColor,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Visibility(
+                    visible: provider.hasSearchResults,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.chevron_left, size: 16),
+                      label: const Text('上一个'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: SettingsService.menuTextColor,
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: provider.hasSearchResults
+                          ? () {
+                              provider.previousSearchResult();
+                              widget.onSearch();
+                            }
+                          : null,
                     ),
                   ),
-                ),
-                Text(
-                  provider.hasSearchResults
-                      ? '${provider.currentSearchIndex + 1}/${provider.searchResults.length}'
-                      : '无结果',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: SettingsService.menuTextColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.chevron_right, size: 16),
-                  iconAlignment: IconAlignment.end,
-                  label: const Text('下一个', style: TextStyle(fontSize: 12)),
-                  onPressed: provider.hasSearchResults
-                      ? () {
-                          provider.nextSearchResult();
-                          widget.onSearch();
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: SettingsService.menuHighlightColor,
-                    foregroundColor: SettingsService.menuHighlightTextColor,
-                    disabledBackgroundColor: SettingsService.menuDividerColor,
-                    disabledForegroundColor:
-                        SettingsService.menuSecondaryTextColor,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  Visibility(
+                    visible: provider.hasSearchResults,
+                    child: Text(
+                      provider.hasSearchResults
+                          ? '${provider.currentSearchIndex + 1}/${provider.searchResults.length}'
+                          : '无结果',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: SettingsService.menuTextColor,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  Visibility(
+                    visible: provider.hasSearchResults,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.chevron_right, size: 16),
+                      iconAlignment: IconAlignment.end,
+                      label: const Text('下一个'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: SettingsService.menuTextColor,
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: provider.hasSearchResults
+                          ? () {
+                              provider.nextSearchResult();
+                              widget.onSearch();
+                            }
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -489,62 +476,58 @@ class _ReaderMenuState extends State<ReaderMenu>
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.chevron_left, size: 16),
+          child: TextButton.icon(
+            icon: const Icon(Icons.chevron_left, size: 12),
             label: const Text('上一章'),
+            style: TextButton.styleFrom(
+              foregroundColor: SettingsService.menuTextColor,
+              padding: EdgeInsets.zero,
+            ),
             onPressed: data.currentChapterIndex > 0
                 ? () => context.read<ReaderProvider>().previousChapter()
                 : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: SettingsService.menuTextColor,
-              side: BorderSide(
-                color: SettingsService.menuDividerColor,
-                width: 1,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
           ),
         ),
-        const SizedBox(width: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: SettingsService.menuDividerColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '${data.currentChapterIndex + 1}/${data.chaptersLength}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: SettingsService.menuTextColor,
-              fontWeight: FontWeight.w600,
+        if (data.chaptersLength > 0)
+          SizedBox(
+            width: 160,
+            child: Slider(
+              value:
+                  _sliderValue ??
+                  (data.currentChapterIndex + 1) /
+                      data.chaptersLength.toDouble(),
+              min: 0.0,
+              max: 1.0,
+              activeColor: SettingsService.menuSliderActiveColor,
+              inactiveColor: SettingsService.menuSliderInactiveColor,
+              thumbColor: SettingsService.menuSliderThumbColor,
+              onChanged: (value) {
+                setState(() {
+                  _sliderValue = value;
+                });
+              },
+              onChangeEnd: (value) {
+                final targetChapter = (value * data.chaptersLength).floor();
+                debugPrint('跳转到第$targetChapter章');
+                context.read<ReaderProvider>().goToChapter(targetChapter);
+                setState(() {
+                  _sliderValue = null;
+                });
+              },
             ),
           ),
-        ),
-        const SizedBox(width: 16),
         Expanded(
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.chevron_right, size: 16),
+          child: TextButton.icon(
+            icon: const Icon(Icons.chevron_right, size: 12),
+            iconAlignment: IconAlignment.end,
             label: const Text('下一章'),
+            style: TextButton.styleFrom(
+              foregroundColor: SettingsService.menuTextColor,
+              padding: EdgeInsets.zero,
+            ),
             onPressed: data.currentChapterIndex < data.chaptersLength - 1
                 ? () => context.read<ReaderProvider>().nextChapter()
                 : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: SettingsService.menuTextColor,
-              side: BorderSide(
-                color: SettingsService.menuDividerColor,
-                width: 1,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
           ),
         ),
       ],
@@ -579,14 +562,13 @@ class _ReaderMenuState extends State<ReaderMenu>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: SettingsService.menuDividerColor,
+                  color: SettingsService.buttonTextColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${data.fontSize.toInt()}',
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
                     color: SettingsService.menuTextColor,
                   ),
                 ),
@@ -631,14 +613,13 @@ class _ReaderMenuState extends State<ReaderMenu>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: SettingsService.menuDividerColor,
+                  color: SettingsService.buttonTextColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   data.lineHeight.toStringAsFixed(1),
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
                     color: SettingsService.menuTextColor,
                   ),
                 ),
@@ -665,39 +646,30 @@ class _ReaderMenuState extends State<ReaderMenu>
     return Consumer<ReaderProvider>(
       builder: (context, provider, child) {
         final bookmarks = provider.getBookmarks();
-
         if (bookmarks.isEmpty) {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               Icon(
                 Icons.bookmark_outline,
-                size: 48,
-                color: SettingsService.menuSecondaryTextColor,
+                size: 24,
+                color: SettingsService.menuTextColor,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               const Text(
                 '暂无书签',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: SettingsService.menuTextColor,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                '在阅读时添加书签',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: SettingsService.menuSecondaryTextColor,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
+              const SizedBox(height: 12),
+              TextButton(
                 onPressed: () => provider.addBookmark(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: SettingsService.menuHighlightColor,
-                  foregroundColor: SettingsService.menuHighlightTextColor,
+                style: TextButton.styleFrom(
+                  backgroundColor: SettingsService.buttonBackgroundColor,
+                  foregroundColor: SettingsService.buttonHighlightColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -708,13 +680,14 @@ class _ReaderMenuState extends State<ReaderMenu>
                 ),
                 child: const Text('添加当前位置为书签'),
               ),
+              const SizedBox(height: 12),
             ],
           );
         }
 
         return Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.4,
+            maxHeight: MediaQuery.of(context).size.height * 0.3,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -727,7 +700,6 @@ class _ReaderMenuState extends State<ReaderMenu>
                       '书签',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
                         color: SettingsService.menuTextColor,
                       ),
                     ),
@@ -736,8 +708,8 @@ class _ReaderMenuState extends State<ReaderMenu>
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('添加'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: SettingsService.menuHighlightColor,
-                        foregroundColor: SettingsService.menuHighlightTextColor,
+                        backgroundColor: SettingsService.buttonBackgroundColor,
+                        foregroundColor: SettingsService.buttonHighlightColor,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
@@ -753,7 +725,7 @@ class _ReaderMenuState extends State<ReaderMenu>
                 ...bookmarks.map((bookmark) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: SettingsService.menuDividerColor,
                       borderRadius: BorderRadius.circular(8),
@@ -763,25 +735,18 @@ class _ReaderMenuState extends State<ReaderMenu>
                       children: [
                         Text(
                           bookmark.chapterTitle,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: SettingsService.menuTextColor,
-                          ),
+                          style: const TextStyle(fontSize: 13),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           bookmark.contentPreview,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: SettingsService.menuSecondaryTextColor,
-                          ),
-                          maxLines: 2,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -789,7 +754,7 @@ class _ReaderMenuState extends State<ReaderMenu>
                               '${bookmark.createdAt.month}月${bookmark.createdAt.day}日',
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: SettingsService.menuSecondaryTextColor,
+                                color: SettingsService.buttonTextColor,
                               ),
                             ),
                             Row(
@@ -802,6 +767,8 @@ class _ReaderMenuState extends State<ReaderMenu>
                                   style: TextButton.styleFrom(
                                     foregroundColor:
                                         SettingsService.menuHighlightColor,
+                                    backgroundColor:
+                                        SettingsService.buttonBackgroundColor,
                                   ),
                                   child: const Text('前往'),
                                 ),
@@ -810,6 +777,7 @@ class _ReaderMenuState extends State<ReaderMenu>
                                       provider.removeBookmark(bookmark.id),
                                   style: TextButton.styleFrom(
                                     foregroundColor: Colors.red,
+                                    //backgroundColor:SettingsService.buttonBackgroundColor,
                                   ),
                                   child: const Text('删除'),
                                 ),

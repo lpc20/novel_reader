@@ -74,25 +74,25 @@ class SettingsService {
   // 支持的字体列表
   static const List<String> fontFamilies = [
     'system',
-    'serif',
-    'sans-serif',
-    'monospace',
-    'cursive',
-    'fantasy',
+    'MiSans',
+    'SourceHanSerif',
+    'OPPOSans',
+    '江西拙楷',
+    'Alibaba',
   ];
 
   // 字体名称映射
   static const Map<String, String> fontFamilyNames = {
     'system': '系统默认',
-    'serif': '衬线字体',
-    'sans-serif': '无衬线字体',
-    'monospace': '等宽字体',
-    'cursive': '手写体',
-    'fantasy': '艺术字体',
+    'MiSans': 'Xiaomi Sans',
+    'SourceHanSerif': '思源宋体',
+    'OPPOSans': 'OPPO Sans',
+    '江西拙楷': '楷书',
+    'Alibaba': 'Alibaba普惠体',
   };
 
   static const List<Map<String, String>> themes = [
-    {'name': '护眼', 'bg': '#F0F8F0', 'text': '#2E7D32'},
+    {'name': '护眼', 'bg': '#eeecde', 'text': '#2E7D32'},
     {'name': '羊皮纸', 'bg': '#F5F0E6', 'text': '#4A4A4A'},
     {'name': '夜间', 'bg': '#1A1A1A', 'text': '#E0E0E0'},
     {'name': '白色', 'bg': '#FFFFFF', 'text': '#333333'},
@@ -105,13 +105,23 @@ class SettingsService {
   ];
 
   // 菜单颜色 - 使用深色主题
-  static const Color menuBackgroundColor = Color(0xFF1E293B);
-  static const Color menuTextColor = Color(0xFFF8FAFC);
-  static const Color menuIconColor = Color(0xFF94A3B8);
-  static const Color menuSecondaryTextColor = Color(0xFFCBD5E1);
-  static const Color menuDividerColor = Color(0xFF334155);
-  static const Color menuHighlightColor = Color(0xFF3B82F6);
-  static const Color menuHighlightTextColor = Color(0xFFFFFFFF);
+  static const Color menuBackgroundColor = Color(0xFF333333);
+  static const Color menuTextColor = Color(0xFFCCCCCC);
+  static const Color menuIconColor = Color(0xFFC9C9C9);
+  static const Color menuDividerColor = Color(0xFFFFFFFF);
+  static const Color menuHighlightColor = Color(0xFFFF7135);
+  //static const Color menuSecondaryTextColor = Color(0xFFCBD5E1);
+  static const Color buttonHighlightColor = Color(0xFFFF7135);
+  static const Color buttonBackgroundColor = Color(0xFFFBEAD8);
+  static const Color buttonTextColor = Color(0xFF474747);
+
+  //static const Color menuHighlightTextColor = Color(0xFFFFFFFF);
+  static const Color menuSliderThumbColor = Color(0xFF4E4E4E);
+  static const Color menuSliderActiveColor = Color(0xFFFF7532);
+  static const Color menuSliderInactiveColor = Color(0xFF4c4c4c);
+
+  //默认字体颜色
+  //static const Color defaultTextColor = Color(0xFFCCCCCC);
 
   Future<void> init() async {
     final directory = await getApplicationDocumentsDirectory();

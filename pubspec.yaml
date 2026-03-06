@@ -61,7 +61,22 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  fonts:
+    - family: MiSans
+      fonts:
+        - asset: assets/fonts/MiSans-Regular.ttf
+    - family: SourceHanSerif
+      fonts:
+        - asset: assets/fonts/SourceHanSerifCN-Regular.ttf
+    - family: OPPOSans
+      fonts:
+        - asset: assets/fonts/OPPOSans-R.ttf
+    - family: 江西拙楷
+      fonts:
+        - asset: assets/fonts/江西拙楷.ttf
+    - family: Alibaba
+      fonts:
+        - asset: assets/fonts/Alibaba-PuHuiTi-Regular.ttf
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
