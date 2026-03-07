@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/app_constants.dart';
 import 'package:novel_reader/services/settings_service.dart';
 import '../models/chapter.dart';
 
@@ -18,20 +19,19 @@ class ChapterListDrawer extends StatefulWidget {
   State<ChapterListDrawer> createState() => _ChapterListDrawerState();
 }
 
-class _ChapterListDrawerState extends State<ChapterListDrawer>
-    with AutomaticKeepAliveClientMixin {
+class _ChapterListDrawerState extends State<ChapterListDrawer> {
   final ScrollController _scrollController = ScrollController();
-
-  @override
-  bool get wantKeepAlive => true;
-
   @override
   void initState() {
     debugPrint('ChapterListDrawer initState');
     super.initState();
     // 延迟滚动到当前章节，等待抽屉布局完成
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (mounted) _scrollToCurrentChapter();
+    // Future.delayed(AppConstants.scrollToChapterDelay, () {
+    //   if (mounted) _scrollToCurrentChapter();
+    // });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      //if (mounted)
+      _scrollToCurrentChapter();
     });
   }
 
@@ -43,20 +43,15 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
   }
 
   void _scrollToCurrentChapter() {
-    if (widget.currentIndex > 0 && _scrollController.hasClients) {
-      const itemHeight = 48.0; // ListTile 默认高度
-      var itemCount = widget.currentIndex; // 包括标题和当前章节
-      final offset = itemCount >= 2
-          ? (itemCount - 2) * itemHeight
-          : 0.0; // 滚动到视图中上部
-
+    if (widget.currentIndex >= 3 && _scrollController.hasClients) {
+      const itemHeight = AppConstants.listTileHeight;
+      final offset = (widget.currentIndex - 3) * itemHeight;
       _scrollController.jumpTo(offset);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -111,7 +106,7 @@ class _ChapterListDrawerState extends State<ChapterListDrawer>
               child: ListView.builder(
                 controller: _scrollController,
                 itemCount: widget.chapters.length,
-                itemExtent: 48.0,
+                itemExtent: AppConstants.listTileHeight,
                 itemBuilder: (context, index) {
                   final chapter = widget.chapters[index];
                   final isCurrent = index == widget.currentIndex;

@@ -1,11 +1,7 @@
 class Chapter {
-  //章节数
   final int index;
-  //章节标题
   final String title;
-  //章节内容的起始位置
   final int startPosition;
-  //章节内容的结束位置
   final int endPosition;
 
   Chapter({
@@ -16,6 +12,19 @@ class Chapter {
   });
 
   int get length => endPosition - startPosition;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Chapter &&
+        other.index == index &&
+        other.title == title &&
+        other.startPosition == startPosition &&
+        other.endPosition == endPosition;
+  }
+
+  @override
+  int get hashCode => Object.hash(index, title, startPosition, endPosition);
 
   @override
   String toString() => 'Chapter(index: $index, title: $title)';

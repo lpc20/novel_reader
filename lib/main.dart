@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:novel_reader/services/bookmarks_service.dart';
 import 'package:provider/provider.dart';
+import 'constants/app_constants.dart';
 import 'providers/bookshelf_provider.dart';
 import 'providers/reader_provider.dart';
 import 'services/settings_service.dart';
@@ -40,7 +41,9 @@ class _NovelReaderAppState extends State<NovelReaderApp>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
       // 应用进入后台时清理缓存
-      FileService().clearCacheIfTooLarge(50 * 1024 * 1024); // 50MB限制
+      FileService().clearCacheIfTooLarge(
+        AppConstants.defaultCacheLimitBytes,
+      ); // 50MB限制
       debugPrint('应用进入后台，清理缓存');
     }
   }

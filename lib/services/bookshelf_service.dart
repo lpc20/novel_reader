@@ -2,29 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:novel_reader/constants/app_constants.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/novel.dart';
 import '../models/reading_progress.dart';
-
-class Debouncer {
-  final Duration delay;
-  VoidCallback? _action;
-  Timer? _timer;
-
-  Debouncer({required this.delay});
-
-  void run(VoidCallback action) {
-    _action = action;
-    _timer?.cancel();
-    _timer = Timer(delay, () {
-      _action?.call();
-    });
-  }
-
-  void cancel() {
-    _timer?.cancel();
-  }
-}
+import '../utils/debouncer.dart';
 
 class BookshelfService {
   static final BookshelfService _instance = BookshelfService._internal();
@@ -34,8 +16,8 @@ class BookshelfService {
   List<Novel> _novels = [];
   Map<String, ReadingProgress> _progressMap = {};
   String? _dataPath;
-  final _progressDebouncer = Debouncer(delay: Duration(seconds: 2));
-  final _novelsDebouncer = Debouncer(delay: Duration(seconds: 2));
+  final _progressDebouncer = Debouncer(delay: AppConstants.debounceDelay);
+  final _novelsDebouncer = Debouncer(delay: AppConstants.debounceDelay);
 
   List<Novel> get novels => List.unmodifiable(_novels);
 

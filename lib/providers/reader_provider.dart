@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/chapter.dart';
 import '../models/reading_progress.dart';
 import '../models/bookmark.dart';
+import '../models/reader_data.dart';
 import '../services/file_service.dart';
 import '../services/settings_service.dart';
 import '../services/bookshelf_service.dart';
@@ -269,28 +270,4 @@ class ReaderProvider extends ChangeNotifier {
     if (_novelId == null) return [];
     return _bookmarksService.getBookmarks(_novelId!);
   }
-}
-
-class SearchResult {
-  final int paragraphIndex;
-  final int startIndex;
-  final int endIndex;
-
-  const SearchResult({
-    required this.paragraphIndex,
-    required this.startIndex,
-    required this.endIndex,
-  });
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is SearchResult &&
-        other.paragraphIndex == paragraphIndex &&
-        other.startIndex == startIndex &&
-        other.endIndex == endIndex;
-  }
-
-  @override
-  int get hashCode => Object.hash(paragraphIndex, startIndex, endIndex);
 }

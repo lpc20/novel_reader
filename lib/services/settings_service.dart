@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import '../constants/app_constants.dart';
 
 class ReadingSettings {
   final double fontSize;
@@ -12,8 +13,8 @@ class ReadingSettings {
   final int themeIndex;
 
   ReadingSettings({
-    this.fontSize = 18.0,
-    this.lineHeight = 1.8,
+    this.fontSize = AppConstants.defaultFontSize,
+    this.lineHeight = AppConstants.defaultLineHeight,
     this.fontFamily = 'system',
     this.backgroundColor = '#F5F5DC',
     this.textColor = '#333333',
@@ -51,8 +52,9 @@ class ReadingSettings {
 
   factory ReadingSettings.fromMap(Map<String, dynamic> map) {
     return ReadingSettings(
-      fontSize: map['fontSize'] as double? ?? 18.0,
-      lineHeight: map['lineHeight'] as double? ?? 1.8,
+      fontSize: map['fontSize'] as double? ?? AppConstants.defaultFontSize,
+      lineHeight:
+          map['lineHeight'] as double? ?? AppConstants.defaultLineHeight,
       fontFamily: map['fontFamily'] as String? ?? 'system',
       backgroundColor: map['backgroundColor'] as String? ?? '#F5F5DC',
       textColor: map['textColor'] as String? ?? '#333333',
@@ -110,12 +112,9 @@ class SettingsService {
   static const Color menuIconColor = Color(0xFFC9C9C9);
   static const Color menuDividerColor = Color(0xFFFFFFFF);
   static const Color menuHighlightColor = Color(0xFFFF7135);
-  //static const Color menuSecondaryTextColor = Color(0xFFCBD5E1);
   static const Color buttonHighlightColor = Color(0xFFFF7135);
   static const Color buttonBackgroundColor = Color(0xFFFBEAD8);
   static const Color buttonTextColor = Color(0xFF474747);
-
-  //static const Color menuHighlightTextColor = Color(0xFFFFFFFF);
   static const Color menuSliderThumbColor = Color(0xFF4E4E4E);
   static const Color menuSliderActiveColor = Color(0xFFFF7532);
   static const Color menuSliderInactiveColor = Color(0xFF4c4c4c);

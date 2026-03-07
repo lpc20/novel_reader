@@ -1,65 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/app_constants.dart';
 import 'package:provider/provider.dart';
+import '../models/reader_data.dart';
 import '../providers/reader_provider.dart';
-import '../services/settings_service.dart';
 import '../widgets/reader_menu.dart';
 import '../widgets/chapter_list_drawer.dart';
 import '../models/novel.dart';
-import '../models/chapter.dart';
 import '../utils/color_utils.dart';
-
-class _ReaderData {
-  final ReadingSettings settings;
-  final List<String> paragraphs;
-  final Chapter? currentChapter;
-  final bool isLoading;
-  final int currentChapterIndex;
-  final List<Chapter> chapters;
-  final String searchQuery;
-  final List<SearchResult> searchResults;
-  final int currentSearchIndex;
-
-  const _ReaderData({
-    required this.settings,
-    required this.paragraphs,
-    required this.currentChapter,
-    required this.isLoading,
-    required this.currentChapterIndex,
-    required this.chapters,
-    required this.searchQuery,
-    required this.searchResults,
-    required this.currentSearchIndex,
-  });
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is _ReaderData &&
-        other.settings == settings &&
-        other.paragraphs == paragraphs &&
-        other.currentChapter == currentChapter &&
-        other.isLoading == isLoading &&
-        other.currentChapterIndex == currentChapterIndex &&
-        listEquals(other.chapters, chapters) &&
-        other.searchQuery == searchQuery &&
-        listEquals(other.searchResults, searchResults) &&
-        other.currentSearchIndex == currentSearchIndex;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    settings,
-    paragraphs,
-    currentChapter,
-    isLoading,
-    currentChapterIndex,
-    chapters,
-    searchQuery,
-    searchResults,
-    currentSearchIndex,
-  );
-}
+import '../widgets/reader/reader_content.dart';
+import '../widgets/reader/chapter_navigation.dart';
 
 class ReaderScreen extends StatefulWidget {
   final Novel novel;
@@ -72,19 +21,18 @@ class ReaderScreen extends StatefulWidget {
 
 class _ReaderScreenState extends State<ReaderScreen>
     with SingleTickerProviderStateMixin {
-  final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _menuAnimationController;
   int? _lastScrollTimestamp;
-  static const int _throttleDelay = 100; // 100ms 节流延迟
-  static final progressIndicator = Center(
+  static const progressIndicator = Center(
     child: SizedBox(
       height: 40,
       width: 40,
       child: CircularProgressIndicator(
-        strokeWidth: 4,
-        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
+        strokeWidth: 1,
+        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
       ),
     ),
   );
@@ -92,17 +40,19 @@ class _ReaderScreenState extends State<ReaderScreen>
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
     _menuAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: AppConstants.menuAnimationDuration,
     );
-    // 延迟加载小说，避免在构建过程中调用 notifyListeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNovel();
     });
   }
+
+  int _lastChapterIndex = -1;
 
   @override
   void dispose() {
@@ -118,13 +68,12 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _loadNovel() async {
-    final readerProvider = Provider.of<ReaderProvider>(context, listen: false);
+    final readerProvider = context.read<ReaderProvider>();
     await readerProvider.loadNovel(
       widget.novel.id,
       widget.novel.filePath,
       widget.novel.encoding,
     );
-
     // 延迟滚动到上次阅读位置，等待布局完成
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -147,9 +96,11 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _onScroll() {
+    if (!mounted) return;
+    //debugPrint('ScrollController绑定了${_scrollController.hasClients}个');
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_lastScrollTimestamp == null ||
-        now - _lastScrollTimestamp! > _throttleDelay) {
+        now - _lastScrollTimestamp! > AppConstants.scrollThrottleDelay) {
       _lastScrollTimestamp = now;
       // 计算滚动进度并更新
       if (_scrollController.hasClients) {
@@ -164,7 +115,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _toggleMenu() {
-    final readerProvider = Provider.of<ReaderProvider>(context, listen: false);
+    final readerProvider = context.read<ReaderProvider>();
     if (readerProvider.showMenu) {
       _menuAnimationController.reverse();
     } else {
@@ -178,105 +129,16 @@ class _ReaderScreenState extends State<ReaderScreen>
     _scaffoldKey.currentState?.openDrawer();
   }
 
-  Widget _buildContentWithParagraphs(
-    List<String> paragraphs,
-    ReadingSettings settings,
-    List<SearchResult> searchResults,
-    int currentSearchIndex,
-  ) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final paragraph = paragraphs[index];
-        final textSpan = _buildHighlightedText(
-          paragraph,
-          settings,
-          searchResults,
-          index,
-          currentSearchIndex,
-        );
-
-        return RepaintBoundary(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: RichText(text: textSpan, softWrap: true),
-          ),
-        );
-      }, childCount: paragraphs.length),
-    );
-  }
-
-  TextSpan _buildHighlightedText(
-    String text,
-    ReadingSettings settings,
-    List<SearchResult> searchResults,
-    int paragraphIndex,
-    int currentSearchIndex,
-  ) {
-    final textStyle = TextStyle(
-      fontSize: settings.fontSize,
-      color: ColorUtils.parseColor(settings.textColor),
-      height: settings.lineHeight,
-      fontWeight: FontWeight.normal,
-      fontFamily: settings.fontFamily == 'system' ? null : settings.fontFamily,
-    );
-
-    if (searchResults.isEmpty || currentSearchIndex < 0) {
-      return TextSpan(text: text, style: textStyle);
-    }
-
-    // 查找当前段落中的搜索结果
-    final currentResult = searchResults[currentSearchIndex];
-
-    // 只高亮当前选中的搜索结果
-    if (currentResult.paragraphIndex != paragraphIndex) {
-      return TextSpan(text: text, style: textStyle);
-    }
-
-    // 构建高亮文本，只高亮当前结果
-    final spans = <TextSpan>[];
-
-    // 添加匹配前的文本
-    if (currentResult.startIndex > 0) {
-      spans.add(
-        TextSpan(
-          text: text.substring(0, currentResult.startIndex),
-          style: textStyle,
-        ),
-      );
-    }
-
-    // 添加高亮的匹配文本
-    spans.add(
-      TextSpan(
-        text: text.substring(currentResult.startIndex, currentResult.endIndex),
-        style: textStyle.copyWith(
-          backgroundColor: const Color(0xFFFFB74D),
-          color: Colors.black,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-
-    // 添加匹配后的文本
-    if (currentResult.endIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(currentResult.endIndex),
-          style: textStyle,
-        ),
-      );
-    }
-
-    return TextSpan(children: spans);
-  }
-
   void _onChapterSelected(int index) {
-    final readerProvider = Provider.of<ReaderProvider>(context, listen: false);
+    final readerProvider = context.read<ReaderProvider>();
+    debugPrint(
+      '章节切换前ScrollController绑定了${_scrollController.positions.length}个',
+    );
     readerProvider.goToChapter(index);
     _scaffoldKey.currentState?.closeDrawer();
   }
 
-  Widget? _buildChapterDrawer(_ReaderData data) {
+  Widget? _buildChapterDrawer(ReaderScreenData data) {
     if (data.chapters.isEmpty) return null;
     return ChapterListDrawer(
       chapters: data.chapters,
@@ -288,23 +150,25 @@ class _ReaderScreenState extends State<ReaderScreen>
   @override
   Widget build(BuildContext context) {
     debugPrint('ReaderScreen build');
-    return Selector<ReaderProvider, _ReaderData>(
-      selector: (context, provider) => _ReaderData(
-        settings: provider.settings,
-        paragraphs: provider.getCurrentChapterContent(),
-        currentChapter: provider.currentChapter,
-        isLoading: provider.isLoading,
-        currentChapterIndex: provider.currentChapterIndex,
-        chapters: provider.chapters,
-        searchQuery: provider.searchQuery,
-        searchResults: provider.searchResults,
-        currentSearchIndex: provider.currentSearchIndex,
-      ),
+    return Selector<ReaderProvider, ReaderScreenData>(
+      selector: (context, provider) => ReaderScreenData.fromProvider(provider),
       builder: (context, data, child) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && data.currentChapterIndex != _lastChapterIndex) {
+            _lastChapterIndex = data.currentChapterIndex;
+            if (_scrollController.hasClients) {
+              _scrollController.jumpTo(0);
+            }
+          }
+        });
+
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: ColorUtils.parseColor(data.settings.backgroundColor),
-          drawer: _buildChapterDrawer(data),
+          drawer: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.7,
+            child: _buildChapterDrawer(data),
+          ),
           body: GestureDetector(
             onTap: () => _toggleMenu(),
             child: Stack(
@@ -313,212 +177,32 @@ class _ReaderScreenState extends State<ReaderScreen>
                   progressIndicator
                 else
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
+                    duration: AppConstants.fadeAnimationDuration,
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
                     child: CustomScrollView(
-                      key: ValueKey('content_${data.currentChapterIndex}'),
                       controller: _scrollController,
                       slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 20,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                if (data.currentChapter != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 24),
-                                    child: Text(
-                                      data.currentChapter!.title,
-                                      style: TextStyle(
-                                        fontSize: data.settings.fontSize + 6,
-                                        fontWeight: FontWeight.w700,
-                                        color: ColorUtils.parseColor(
-                                          data.settings.textColor,
-                                        ),
-                                        height: 1.3,
-                                        letterSpacing: 1.0,
-                                        fontFamily:
-                                            data.settings.fontFamily == 'system'
-                                            ? null
-                                            : data.settings.fontFamily,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                if (data.currentChapter != null)
-                                  Divider(
-                                    height: 2,
-                                    color: ColorUtils.parseColor(
-                                      data.settings.textColor,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          sliver: _buildContentWithParagraphs(
-                            data.paragraphs,
-                            data.settings,
-                            data.searchResults,
-                            data.currentSearchIndex,
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 30,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // 上一章按钮
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 10),
-                                    child: ElevatedButton.icon(
-                                      onPressed: data.currentChapterIndex > 0
-                                          ? () => context
-                                                .read<ReaderProvider>()
-                                                .goToChapter(
-                                                  data.currentChapterIndex - 1,
-                                                )
-                                          : null,
-                                      icon: const Icon(
-                                        Icons.chevron_left,
-                                        size: 18,
-                                      ),
-                                      label: const Text('上一章'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        foregroundColor: ColorUtils.parseColor(
-                                          data.settings.textColor,
-                                        ),
-                                        side: BorderSide(
-                                          color: ColorUtils.parseColor(
-                                            data.settings.textColor,
-                                          ),
-                                          width: 1,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // 章节信息
-                                Text(
-                                  '${data.currentChapterIndex + 1}/${data.chapters.length}',
-                                  style: TextStyle(
-                                    fontSize: data.settings.fontSize - 2,
-                                    color: ColorUtils.parseColor(
-                                      data.settings.textColor,
-                                    ),
-                                  ),
-                                ),
-                                // 下一章按钮
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.only(left: 10),
-                                    child: ElevatedButton.icon(
-                                      onPressed:
-                                          data.currentChapterIndex <
-                                              data.chapters.length - 1
-                                          ? () => context
-                                                .read<ReaderProvider>()
-                                                .goToChapter(
-                                                  data.currentChapterIndex + 1,
-                                                )
-                                          : null,
-                                      icon: const Icon(
-                                        Icons.chevron_right,
-                                        size: 18,
-                                      ),
-                                      iconAlignment: IconAlignment.end,
-                                      label: const Text('下一章'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        foregroundColor: ColorUtils.parseColor(
-                                          data.settings.textColor,
-                                        ),
-                                        side: BorderSide(
-                                          color: ColorUtils.parseColor(
-                                            data.settings.textColor,
-                                          ),
-                                          width: 1,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        ...ReaderContent(
+                          paragraphs: data.paragraphs,
+                          settings: data.settings,
+                          searchResults: data.searchResults,
+                          currentSearchIndex: data.currentSearchIndex,
+                          chapterTitle: data.currentChapter?.title,
+                        ).buildSlivers(),
+                        ChapterNavigation(
+                          currentChapterIndex: data.currentChapterIndex,
+                          chaptersLength: data.chapters.length,
+                          onChapterChange: (index) =>
+                              context.read<ReaderProvider>().goToChapter(index),
+                          settings: data.settings,
+                        ).buildSliver(),
                       ],
                     ),
                   ),
-                // 阅读进度指示器
-                // Positioned(
-                //   bottom: 10,
-                //   right: 20,
-                //   child: Container(
-                //     padding: const EdgeInsets.symmetric(
-                //       horizontal: 12,
-                //       vertical: 4,
-                //     ),
-                //     decoration: BoxDecoration(
-                //       color: ColorUtils.parseColor(
-                //         data.settings.backgroundColor,
-                //       ).withValues(alpha: 0.8),
-                //       borderRadius: BorderRadius.circular(12),
-                //       border: Border.all(
-                //         color: ColorUtils.parseColor(
-                //           data.settings.textColor,
-                //         ).withValues(alpha: 0.2),
-                //         width: 1,
-                //       ),
-                //     ),
-                //     child: Text(
-                //       '${(scrollProgress * 100).toStringAsFixed(0)}%',
-                //       style: TextStyle(
-                //         fontSize: 11,
-                //         color: ColorUtils.parseColor(
-                //           data.settings.textColor,
-                //         ).withValues(alpha: 0.6),
-                //       ),
-                //     ),
-                //   ),
-                // ),
                 AnimatedOpacity(
                   opacity: context.watch<ReaderProvider>().showMenu ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 250),
+                  duration: AppConstants.fadeAnimationDuration,
                   curve: Curves.easeInOut,
                   child: Visibility(
                     visible: context.watch<ReaderProvider>().showMenu,
@@ -537,7 +221,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                             ),
                           ),
                       child: ReaderMenu(
-                        novel: widget.novel,
+                        title: widget.novel.title,
                         onClose: _toggleMenu,
                         onChapterList: _openChapterDrawer,
                         onSearch: _onSearch,
@@ -579,6 +263,8 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _scrollToSearchResult() {
+    if (!mounted) return;
+
     final provider = context.read<ReaderProvider>();
     if (provider.currentSearchIndex < 0 ||
         provider.currentSearchIndex >= provider.searchResults.length) {
@@ -607,13 +293,13 @@ class _ReaderScreenState extends State<ReaderScreen>
 
     targetPosition += verticalPadding;
 
-    if (_scrollController.hasClients) {
+    if (mounted && _scrollController.hasClients) {
       final scrollPosition = _scrollController.position;
       final targetScroll = targetPosition - 100;
 
       _scrollController.animateTo(
         targetScroll.clamp(0.0, scrollPosition.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
+        duration: AppConstants.menuAnimationDuration,
         curve: Curves.easeInOut,
       );
     }

@@ -5,8 +5,9 @@ import '../providers/bookshelf_provider.dart';
 import '../models/novel.dart';
 import '../screens/reader_screen.dart';
 import '../utils/permission_helper.dart';
-import '../utils/color_utils.dart';
 import '../services/settings_service.dart';
+import '../widgets/book_card.dart';
+import '../widgets/empty_bookshelf.dart';
 
 class BookshelfScreen extends StatefulWidget {
   const BookshelfScreen({super.key});
@@ -221,61 +222,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           }
 
           if (provider.novels.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: SettingsService.menuDividerColor,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Icon(
-                      Icons.menu_book_outlined,
-                      size: 60,
-                      color: SettingsService.menuTextColor.withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '书架空空如也',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: SettingsService.menuTextColor,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '点击右下角 + 导入本地小说',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: SettingsService.menuTextColor.withValues(
-                        alpha: 0.7,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    onPressed: _importBook,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('导入小说'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: SettingsService.menuHighlightColor,
-                      foregroundColor: SettingsService.menuTextColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return EmptyBookshelf(onImport: _importBook);
           }
 
           return GridView.builder(
@@ -290,7 +237,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             itemBuilder: (context, index) {
               final novel = provider.novels[index];
               return RepaintBoundary(
-                child: _BookCard(
+                child: BookCard(
                   novel: novel,
                   onTap: () => _openBook(novel),
                   onLongPress: () => _deleteBook(novel),
@@ -304,183 +251,6 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         onPressed: _importBook,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(60)),
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class _BookCard extends StatefulWidget {
-  final Novel novel;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
-  const _BookCard({
-    required this.novel,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  @override
-  State<_BookCard> createState() => _BookCardState();
-}
-
-class _BookCardState extends State<_BookCard>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    final coverColor = ColorUtils.parseColor(widget.novel.coverColor);
-
-    return GestureDetector(
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: Container(
-        decoration: BoxDecoration(
-          color: coverColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // 背景渐变
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      coverColor.withValues(alpha: 0.95),
-                      coverColor.withValues(alpha: 0.7),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-            // 装饰元素
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-            // 内容
-            Positioned.fill(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // 标题
-                    Text(
-                      widget.novel.title,
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        height: 1.3,
-                      ),
-                    ),
-                    // 信息
-                    Column(
-                      children: [
-                        // 章节数
-                        Text(
-                          '${widget.novel.chaptersCount > 0 ? widget.novel.chaptersCount : 0} 章',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // 文件大小
-                        Text(
-                          widget.novel.fileSizeFormatted,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // 阅读进度条（如果有阅读记录）
-            if (widget.novel.lastReadProgress > 0)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(16),
-                    ),
-                  ),
-                  child: Container(
-                    width: widget.novel.lastReadProgress * 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            // 阅读状态指示器
-            if (widget.novel.lastReadProgress > 0)
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    '已读',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
