@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:novel_reader/constants/app_constants.dart';
+import 'package:novel_reader/widgets/chapter_drawer.dart';
 import 'package:provider/provider.dart';
 import '../models/reader_data.dart';
 import '../providers/reader_provider.dart';
 import '../widgets/reader_menu.dart';
-import '../widgets/chapter_list_drawer.dart';
 import '../models/novel.dart';
 import '../utils/color_utils.dart';
 import '../widgets/reader/reader_content.dart';
@@ -21,10 +21,13 @@ class ReaderScreen extends StatefulWidget {
 
 class _ReaderScreenState extends State<ReaderScreen>
     with SingleTickerProviderStateMixin {
+  bool _showDrawer = false;
+  bool _showMenu = false;
   late final ScrollController _scrollController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _menuAnimationController;
+  late Animation<Offset> _menuAnimation;
   int? _lastScrollTimestamp;
   static const progressIndicator = Center(
     child: SizedBox(
@@ -47,12 +50,17 @@ class _ReaderScreenState extends State<ReaderScreen>
       vsync: this,
       duration: AppConstants.menuAnimationDuration,
     );
+    _menuAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _menuAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNovel();
     });
   }
-
-  int _lastChapterIndex = -1;
 
   @override
   void dispose() {
@@ -97,7 +105,6 @@ class _ReaderScreenState extends State<ReaderScreen>
 
   void _onScroll() {
     if (!mounted) return;
-    //debugPrint('ScrollController绑定了${_scrollController.hasClients}个');
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_lastScrollTimestamp == null ||
         now - _lastScrollTimestamp! > AppConstants.scrollThrottleDelay) {
@@ -115,126 +122,165 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _toggleMenu() {
-    final readerProvider = context.read<ReaderProvider>();
-    if (readerProvider.showMenu) {
+    if (_menuAnimationController.isAnimating) return;
+    if (_showMenu) {
       _menuAnimationController.reverse();
     } else {
       _menuAnimationController.forward(from: 0);
     }
-    readerProvider.toggleMenu();
+    setState(() {
+      _showMenu = !_showMenu;
+    });
   }
 
   void _openChapterDrawer() {
-    _toggleMenu();
-    _scaffoldKey.currentState?.openDrawer();
+    if (_showMenu) _toggleMenu();
+    _showDrawer = true;
   }
+
+  // void _onChapterSelectedWithoutDrawer(int index) {
+  //   context.read<ReaderProvider>().goToChapter(index);
+  //   _showDrawer = false;
+
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     if (mounted && _scrollController.hasClients) {
+  //         _scrollController.jumpTo(0.0);
+  //     }
+  //   });
+  // }
 
   void _onChapterSelected(int index) {
     final readerProvider = context.read<ReaderProvider>();
-    debugPrint(
-      '章节切换前ScrollController绑定了${_scrollController.positions.length}个',
-    );
+    if (index == readerProvider.currentChapterIndex) {
+      _showDrawer = false;
+      return;
+    }
     readerProvider.goToChapter(index);
-    _scaffoldKey.currentState?.closeDrawer();
-  }
-
-  Widget? _buildChapterDrawer(ReaderScreenData data) {
-    if (data.chapters.isEmpty) return null;
-    return ChapterListDrawer(
-      chapters: data.chapters,
-      currentIndex: data.currentChapterIndex,
-      onChapterSelected: _onChapterSelected,
-    );
+    _showDrawer = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scrollController.hasClients) {
+        _scrollController.animateTo(
+          0.0,
+          duration: AppConstants.scrollToChapterDelay,
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('ReaderScreen build');
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Selector<ReaderProvider, ReaderScreenData>(
       selector: (context, provider) => ReaderScreenData.fromProvider(provider),
       builder: (context, data, child) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && data.currentChapterIndex != _lastChapterIndex) {
-            _lastChapterIndex = data.currentChapterIndex;
-            if (_scrollController.hasClients) {
-              _scrollController.jumpTo(0);
-            }
-          }
-        });
-
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: ColorUtils.parseColor(data.settings.backgroundColor),
-          drawer: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.7,
-            child: _buildChapterDrawer(data),
-          ),
           body: GestureDetector(
             onTap: () => _toggleMenu(),
             child: Stack(
               children: [
-                if (data.isLoading)
-                  progressIndicator
-                else
-                  AnimatedSwitcher(
-                    duration: AppConstants.fadeAnimationDuration,
-                    transitionBuilder: (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        ...ReaderContent(
-                          paragraphs: data.paragraphs,
-                          settings: data.settings,
-                          searchResults: data.searchResults,
-                          currentSearchIndex: data.currentSearchIndex,
-                          chapterTitle: data.currentChapter?.title,
-                        ).buildSlivers(),
-                        ChapterNavigation(
-                          currentChapterIndex: data.currentChapterIndex,
-                          chaptersLength: data.chapters.length,
-                          onChapterChange: (index) =>
-                              context.read<ReaderProvider>().goToChapter(index),
-                          settings: data.settings,
-                        ).buildSliver(),
-                      ],
-                    ),
-                  ),
-                AnimatedOpacity(
-                  opacity: context.watch<ReaderProvider>().showMenu ? 1.0 : 0.0,
-                  duration: AppConstants.fadeAnimationDuration,
-                  curve: Curves.easeInOut,
-                  child: Visibility(
-                    visible: context.watch<ReaderProvider>().showMenu,
-                    maintainState: true,
-                    maintainAnimation: true,
-                    maintainSize: true,
-                    child: SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: const Offset(0, 0.05),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: _menuAnimationController,
-                              curve: Curves.easeOutCubic,
-                            ),
-                          ),
-                      child: ReaderMenu(
-                        title: widget.novel.title,
-                        onClose: _toggleMenu,
-                        onChapterList: _openChapterDrawer,
-                        onSearch: _onSearch,
-                        searchController: _searchController,
-                      ),
-                    ),
-                  ),
-                ),
+                // 主内容区域
+                _buildMainContent(data),
+                //章节抽屉
+                _buildChapterDrawer(data, screenWidth),
+                // 阅读器菜单
+                _buildReaderMenu(data, screenWidth),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMainContent(ReaderScreenData data) {
+    if (data.isLoading) {
+      return progressIndicator;
+    }
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        ...ReaderContent(
+          paragraphs: data.paragraphs,
+          settings: data.settings,
+          searchResults: data.searchResults,
+          currentSearchIndex: data.currentSearchIndex,
+          chapterTitle: data.currentChapter?.title,
+        ).buildSlivers(),
+        ChapterNavigation(
+          currentChapterIndex: data.currentChapterIndex,
+          chaptersLength: data.chapters.length,
+          onChapterChange: _onChapterSelected,
+          settings: data.settings,
+        ).buildSliver(),
+      ],
+    );
+  }
+
+  Widget _buildChapterDrawer(ReaderScreenData data, double screenWidth) {
+    return AnimatedPositioned(
+      duration: AppConstants.fadeAnimationDuration,
+      curve: Curves.easeInOut,
+      left: _showDrawer ? 0 : -screenWidth,
+      top: 0,
+      bottom: 0,
+      width: screenWidth,
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _showDrawer = false);
+        },
+        child: Container(
+          color: _showDrawer ? Colors.black54 : Colors.transparent, // 遮罩层
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () {}, // 阻止点击穿透到遮罩
+              child: Container(
+                width: screenWidth * 0.7,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: ChapterDrawer(
+                  chapters: data.chapters,
+                  currentIndex: data.currentChapterIndex,
+                  onChapterSelected: _onChapterSelected,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReaderMenu(ReaderScreenData data, double screenWidth) {
+    return AnimatedOpacity(
+      opacity: _showMenu ? 1.0 : 0.0,
+      duration: AppConstants.fadeAnimationDuration,
+      curve: Curves.easeInOut,
+      child: Visibility(
+        visible: _showMenu,
+        maintainState: true,
+        maintainAnimation: true,
+        maintainSize: true,
+        child: SlideTransition(
+          position: _menuAnimation,
+          child: ReaderMenu(
+            title: widget.novel.title,
+            onClose: _toggleMenu,
+            onChapterList: _openChapterDrawer,
+            onSearch: _onSearch,
+            searchController: _searchController,
+          ),
+        ),
+      ),
     );
   }
 

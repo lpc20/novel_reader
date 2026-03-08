@@ -71,7 +71,10 @@ class _ReaderMenuState extends State<ReaderMenu>
             RepaintBoundary(
               child: MenuTopBar(
                 title: widget.title,
-                onBack: _onBack,
+                onBack: () {
+                  widget.onClose();
+                  Navigator.pop(context);
+                },
                 onOpenChapterList: widget.onChapterList,
               ),
             ),
@@ -81,12 +84,6 @@ class _ReaderMenuState extends State<ReaderMenu>
         );
       },
     );
-  }
-
-  void _onBack() {
-    final readerProvider = context.read<ReaderProvider>();
-    readerProvider.toggleMenu();
-    Navigator.pop(context);
   }
 
   Widget _buildBottomPanel(BuildContext context, MenuData data) {
@@ -99,7 +96,6 @@ class _ReaderMenuState extends State<ReaderMenu>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 内容面板
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -184,31 +180,29 @@ class _ReaderMenuState extends State<ReaderMenu>
               ],
             ),
           ),
-          //底部分割线
           Container(
             height: 1,
             color: SettingsService.menuIconColor,
-            margin: const EdgeInsets.symmetric(vertical: 2),
+            margin: const EdgeInsets.symmetric(vertical: 1),
           ),
-          // TabBar 放在底部，使用图标+文字
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: SettingsService.menuHighlightColor,
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+              indicatorColor: Colors.transparent,
+              //indicatorSize: TabBarIndicatorSize.tab,
+              //labelPadding: const EdgeInsets.symmetric(horizontal: 8),
               unselectedLabelColor: SettingsService.menuIconColor,
               labelStyle: const TextStyle(
                 fontSize: 14,
-                color: SettingsService.menuTextColor,
+                color: SettingsService.menuHighlightColor,
               ),
               unselectedLabelStyle: const TextStyle(fontSize: 12),
               tabs: const [
-                Tab(icon: Icon(Icons.menu_book_outlined, size: 16), text: '目录'),
-                Tab(icon: Icon(Icons.settings_outlined, size: 16), text: '设置'),
-                Tab(icon: Icon(Icons.search_outlined, size: 16), text: '查找'),
-                Tab(icon: Icon(Icons.bookmark_outlined, size: 16), text: '书签'),
+                Tab(icon: Icon(Icons.menu_book, size: 16), text: '目录'),
+                Tab(icon: Icon(Icons.settings, size: 16), text: '设置'),
+                Tab(icon: Icon(Icons.search, size: 16), text: '查找'),
+                Tab(icon: Icon(Icons.bookmark, size: 16), text: '书签'),
               ],
               onTap: (index) {
                 setState(() {

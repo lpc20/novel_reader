@@ -22,10 +22,7 @@ class ReaderContent extends StatelessWidget {
   List<Widget> buildSlivers() {
     return [
       SliverPadding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 20,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         sliver: SliverToBoxAdapter(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -38,12 +35,12 @@ class ReaderContent extends StatelessWidget {
                     style: TextStyle(
                       fontSize: settings.fontSize + 6,
                       fontWeight: FontWeight.bold,
-                      color: ColorUtils.parseColor(
-                        settings.textColor,
-                      ),
+                      color: ColorUtils.parseColor(settings.textColor),
                       height: 1.3,
                       letterSpacing: 1.0,
-                      fontFamily: settings.fontFamily == 'system' ? null : settings.fontFamily,
+                      fontFamily: settings.fontFamily == 'system'
+                          ? null
+                          : settings.fontFamily,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -53,9 +50,7 @@ class ReaderContent extends StatelessWidget {
               if (chapterTitle != null)
                 Divider(
                   height: 1,
-                  color: ColorUtils.parseColor(
-                    settings.textColor,
-                  ),
+                  color: ColorUtils.parseColor(settings.textColor),
                 ),
             ],
           ),
@@ -81,10 +76,7 @@ class ReaderContent extends StatelessWidget {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final paragraph = paragraphs[index];
-        final textSpan = _buildHighlightedText(
-          paragraph,
-          index,
-        );
+        final textSpan = _buildHighlightedText(paragraph, index);
 
         return RepaintBoundary(
           child: Padding(
@@ -96,10 +88,7 @@ class ReaderContent extends StatelessWidget {
     );
   }
 
-  TextSpan _buildHighlightedText(
-    String text,
-    int paragraphIndex,
-  ) {
+  TextSpan _buildHighlightedText(String text, int paragraphIndex) {
     final textStyle = TextStyle(
       fontSize: settings.fontSize,
       color: ColorUtils.parseColor(settings.textColor),
@@ -135,10 +124,7 @@ class ReaderContent extends StatelessWidget {
 
     if (startIndex > 0) {
       spans.add(
-        TextSpan(
-          text: text.substring(0, startIndex),
-          style: textStyle,
-        ),
+        TextSpan(text: text.substring(0, startIndex), style: textStyle),
       );
     }
 
@@ -153,12 +139,7 @@ class ReaderContent extends StatelessWidget {
     );
 
     if (endIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(endIndex),
-          style: textStyle,
-        ),
-      );
+      spans.add(TextSpan(text: text.substring(endIndex), style: textStyle));
     }
     return TextSpan(children: spans);
   }

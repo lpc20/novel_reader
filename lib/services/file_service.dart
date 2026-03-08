@@ -127,7 +127,7 @@ class FileService {
     final bytes = await file.readAsBytes();
 
     String content;
-    debugPrint('检测到编码: $encoding');
+    //debugPrint('检测到编码: $encoding');
     if (encoding.toUpperCase() == 'UTF-8') {
       content = utf8.decode(bytes);
     } else if (encoding.toUpperCase() == 'GBK') {

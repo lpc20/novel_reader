@@ -94,10 +94,10 @@ class SettingsService {
   };
 
   static const List<Map<String, String>> themes = [
-    {'name': '护眼', 'bg': '#eeecde', 'text': '#2E7D32'},
+    {'name': '护眼', 'bg': '#F5F5DC', 'text': '#333333'},
     {'name': '羊皮纸', 'bg': '#F5F0E6', 'text': '#4A4A4A'},
     {'name': '夜间', 'bg': '#1A1A1A', 'text': '#E0E0E0'},
-    {'name': '白色', 'bg': '#FFFFFF', 'text': '#333333'},
+    // {'name': '白色', 'bg': '#FFFFFF', 'text': '#333333'},
     {'name': '深蓝', 'bg': '#E3F2FD', 'text': '#1976D2'},
     {'name': '复古', 'bg': '#FFF8E1', 'text': '#D84315'},
     {'name': '浅灰', 'bg': '#F5F5F5', 'text': '#424242'},

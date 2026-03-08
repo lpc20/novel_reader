@@ -56,10 +56,10 @@ class _NovelReaderAppState extends State<NovelReaderApp>
         ChangeNotifierProvider(create: (_) => ReaderProvider()),
       ],
       child: MaterialApp(
-        title: '小说阅读器',
+        title: 'Novel Reader',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          textTheme: ThemeData.light().textTheme.apply(fontFamily: '江西拙楷'),
+          textTheme: ThemeData.light().textTheme.apply(fontFamily: 'OPPOSans'),
           typography: Typography.material2021(
             platform: Theme.of(context).platform,
           ),

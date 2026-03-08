@@ -20,7 +20,6 @@ class ReaderProvider extends ChangeNotifier {
   String? _novelId;
   bool _isLoading = false;
   double _scrollProgress = 0.0;
-  bool _showMenu = false;
 
   // 搜索相关状态
   String _searchQuery = '';
@@ -37,7 +36,6 @@ class ReaderProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   double get scrollProgress => _scrollProgress;
   ReadingSettings get settings => _settingsService.settings;
-  bool get showMenu => _showMenu;
   String? get novelId => _novelId;
   String get searchQuery => _searchQuery;
   List<SearchResult> get searchResults => _searchResults;
@@ -94,17 +92,16 @@ class ReaderProvider extends ChangeNotifier {
       // 只删除标题后的换行符，保留正文开头的空格缩进
       if (contentWithoutTitle.startsWith('\n')) {
         contentWithoutTitle = contentWithoutTitle.substring(1);
-      }
-      if (contentWithoutTitle.startsWith('\r\n')) {
+      } else if (contentWithoutTitle.startsWith('\r\n')) {
         contentWithoutTitle = contentWithoutTitle.substring(2);
       }
       return contentWithoutTitle
           .split('\n')
-          .where((p) => p.isNotEmpty)
+          .where((p) => p.trim().isNotEmpty)
           .toList();
     }
 
-    return fullContent.split('\n').where((p) => p.isNotEmpty).toList();
+    return fullContent.split('\n').where((p) => p.trim().isNotEmpty).toList();
   }
 
   void goToChapter(int index) {
@@ -133,11 +130,6 @@ class ReaderProvider extends ChangeNotifier {
     _saveProgress();
   }
 
-  void toggleMenu() {
-    _showMenu = !_showMenu;
-    notifyListeners();
-  }
-
   Future<void> _saveProgress() async {
     if (_novelId == null) return;
 
@@ -149,6 +141,17 @@ class ReaderProvider extends ChangeNotifier {
         scrollProgress: _scrollProgress,
       ),
     );
+    if (_chapters.isNotEmpty) {
+      final overallProgress =
+          (_currentChapterIndex + _scrollProgress) / _chapters.length;
+      final novel = _bookshelfService.getNovel(_novelId!);
+      if (novel != null) {
+        final updatedNovel = novel.copyWith(
+          lastReadProgress: overallProgress.clamp(0.0, 1.0),
+        );
+        await _bookshelfService.updateNovel(updatedNovel);
+      }
+    }
   }
 
   Future<void> setFontSize(double size) async {

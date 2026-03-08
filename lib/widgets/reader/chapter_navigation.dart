@@ -18,13 +18,10 @@ class ChapterNavigation extends StatelessWidget {
 
   Widget buildSliver() {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 30,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       sliver: SliverToBoxAdapter(
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             // 上一章按钮
             Expanded(
@@ -34,30 +31,21 @@ class ChapterNavigation extends StatelessWidget {
                   onPressed: currentChapterIndex > 0
                       ? () => onChapterChange(currentChapterIndex - 1)
                       : null,
-                  icon: const Icon(
-                    Icons.chevron_left,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.chevron_left, size: 18),
                   label: const Text('上一章'),
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.transparent,
-                    foregroundColor: ColorUtils.parseColor(
-                      settings.textColor,
-                    ),
+                    foregroundColor: ColorUtils.parseColor(settings.textColor),
                     side: BorderSide(
-                      color: ColorUtils.parseColor(
-                        settings.textColor,
-                      ),
+                      color: ColorUtils.parseColor(settings.textColor),
                       width: 1,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 8,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        12,
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -67,13 +55,12 @@ class ChapterNavigation extends StatelessWidget {
             SizedBox(
               width: 80,
               child: Text(
-                '${currentChapterIndex + 1}/${chaptersLength}',
+                '${((currentChapterIndex + 1) / chaptersLength.toDouble() * 100).toStringAsFixed(2)}%',
                 style: TextStyle(
                   fontSize: 14,
-                  color: ColorUtils.parseColor(
-                    settings.textColor,
-                  ),
+                  color: ColorUtils.parseColor(settings.textColor),
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
             // 下一章按钮
@@ -84,31 +71,22 @@ class ChapterNavigation extends StatelessWidget {
                   onPressed: currentChapterIndex < chaptersLength - 1
                       ? () => onChapterChange(currentChapterIndex + 1)
                       : null,
-                  icon: const Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.chevron_right, size: 18),
                   iconAlignment: IconAlignment.end,
                   label: const Text('下一章'),
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.transparent,
-                    foregroundColor: ColorUtils.parseColor(
-                      settings.textColor,
-                    ),
+                    foregroundColor: ColorUtils.parseColor(settings.textColor),
                     side: BorderSide(
-                      color: ColorUtils.parseColor(
-                        settings.textColor,
-                      ),
+                      color: ColorUtils.parseColor(settings.textColor),
                       width: 1,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 8,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        12,
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),

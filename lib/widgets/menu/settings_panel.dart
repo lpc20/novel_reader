@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/app_constants.dart';
 import '../../services/settings_service.dart';
 import '../../utils/color_utils.dart';
 
@@ -180,7 +181,7 @@ class SettingsPanel extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.remove, size: 16),
-                onPressed: fontSize > 12
+                onPressed: fontSize > AppConstants.minFontSize
                     ? () => onFontSizeChange(fontSize - 2)
                     : null,
                 padding: EdgeInsets.zero,
@@ -203,7 +204,7 @@ class SettingsPanel extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 16),
-                onPressed: fontSize < 30
+                onPressed: fontSize < AppConstants.maxFontSize
                     ? () => onFontSizeChange(fontSize + 2)
                     : null,
                 padding: EdgeInsets.zero,
@@ -227,7 +228,7 @@ class SettingsPanel extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.remove, size: 16),
-                onPressed: lineHeight > 1.0
+                onPressed: lineHeight > AppConstants.minLineHeight
                     ? () => onLineHeightChange(lineHeight - 0.2)
                     : null,
                 padding: EdgeInsets.zero,
@@ -250,7 +251,7 @@ class SettingsPanel extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 16),
-                onPressed: lineHeight < 2.0
+                onPressed: lineHeight < AppConstants.maxLineHeight
                     ? () => onLineHeightChange(lineHeight + 0.2)
                     : null,
                 padding: EdgeInsets.zero,

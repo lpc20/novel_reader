@@ -97,18 +97,29 @@ class _BookCardState extends State<BookCard>
                     Column(
                       children: [
                         Text(
-                          '${widget.novel.chaptersCount > 0 ? widget.novel.chaptersCount : 0} 章',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
                           widget.novel.fileSizeFormatted,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 11,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '已读${(widget.novel.lastReadProgress * 100).toInt()}%',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -117,53 +128,50 @@ class _BookCardState extends State<BookCard>
                 ),
               ),
             ),
-            if (widget.novel.lastReadProgress > 0)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(16),
-                    ),
-                  ),
-                  child: Container(
-                    width: widget.novel.lastReadProgress * 100,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        bottom: Radius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (widget.novel.lastReadProgress > 0)
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    '已读',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
+            // if (widget.novel.lastReadProgress > 0)
+            // Positioned(
+            //   bottom: 0,
+            //   left: 0,
+            //   right: 0,
+            //   child: Container(
+            //     height: 4,
+            //     decoration: BoxDecoration(
+            //       color: Colors.white.withValues(alpha: 0.2),
+            //       borderRadius: const BorderRadius.vertical(
+            //         bottom: Radius.circular(16),
+            //       ),
+            //     ),
+            //     child: Container(
+            //       width: widget.novel.lastReadProgress * 100,
+            //       decoration: const BoxDecoration(
+            //         color: Colors.black,
+            //         borderRadius: BorderRadius.vertical(
+            //           bottom: Radius.circular(16),
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // if (widget.novel.lastReadProgress > 0)
+            // Positioned(
+            //   bottom: 10,
+            //   left: 2,
+            //   child: Container(
+            //     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            //     decoration: BoxDecoration(
+            //       color: Colors.white.withValues(alpha: 0.2),
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     child: Text(
+            //       '已读${(widget.novel.lastReadProgress * 100).toInt()}%',
+            //       style: TextStyle(
+            //         color: Colors.white,
+            //         fontSize: 10,
+            //         fontWeight: FontWeight.w500,
+            //       ),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
