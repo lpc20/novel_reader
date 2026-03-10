@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:novel_reader/constants/global.dart';
 import 'package:novel_reader/widgets/chapter_drawer.dart';
 import 'package:novel_reader/widgets/reader/text_paginator.dart';
@@ -45,6 +46,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
@@ -66,6 +68,7 @@ class _ReaderScreenState extends State<ReaderScreen>
 
   @override
   void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
     _scrollController.dispose();
     _searchController.dispose();
     _menuAnimationController.dispose();
@@ -128,8 +131,10 @@ class _ReaderScreenState extends State<ReaderScreen>
     if (_menuAnimationController.isAnimating) return;
     if (_showMenu) {
       _menuAnimationController.reverse();
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     } else {
       _menuAnimationController.forward(from: 0);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
     }
     setState(() {
       _showMenu = !_showMenu;
@@ -271,7 +276,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                 width: screenWidth * 0.7,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(16),
                     bottomRight: Radius.circular(16),
                   ),

@@ -39,7 +39,7 @@ class ReaderContent extends StatelessWidget {
                       height: 1.3,
                       letterSpacing: 1.0,
                       fontFamily: settings.fontFamily == 'system'
-                          ? null
+                          ? 'OPPOSans'
                           : settings.fontFamily,
                     ),
                     textAlign: TextAlign.left,
@@ -94,7 +94,9 @@ class ReaderContent extends StatelessWidget {
       color: ColorUtils.parseColor(settings.textColor),
       height: settings.lineHeight,
       fontWeight: FontWeight.normal,
-      fontFamily: settings.fontFamily == 'system' ? null : settings.fontFamily,
+      fontFamily: settings.fontFamily == 'system'
+          ? 'OPPOSans'
+          : settings.fontFamily,
     );
 
     if (searchResults.isEmpty || currentSearchIndex < 0) {

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import '../models/bookmark.dart';
 import '../models/chapter.dart';
 import '../models/novel.dart';
@@ -14,9 +12,9 @@ class ReaderRepository {
     FileService? fileService,
     BookshelfService? bookshelfService,
     BookmarksService? bookmarksService,
-  })  : _fileService = fileService ?? FileService(),
-        _bookshelfService = bookshelfService ?? BookshelfService(),
-        _bookmarksService = bookmarksService ?? BookmarksService();
+  }) : _fileService = fileService ?? FileService(),
+       _bookshelfService = bookshelfService ?? BookshelfService(),
+       _bookmarksService = bookmarksService ?? BookmarksService();
 
   final FileService _fileService;
   final BookshelfService _bookshelfService;
@@ -68,4 +66,3 @@ class ReaderRepository {
     return _bookmarksService.getBookmarks(novelId);
   }
 }
-

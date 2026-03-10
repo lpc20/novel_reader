@@ -79,7 +79,7 @@ class SearchPanel extends StatelessWidget {
                 visible: hasSearchResults,
                 child: Text(
                   hasSearchResults
-                      ? '${currentSearchIndex + 1}/${searchResultsLength}'
+                      ? '${currentSearchIndex + 1}/$searchResultsLength'
                       : '无结果',
                   style: const TextStyle(
                     fontSize: 12,

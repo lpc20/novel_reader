@@ -8,7 +8,6 @@ import 'menu/search_panel.dart';
 import 'menu/bookmark_panel.dart';
 import '../models/menu_data.dart';
 import '../providers/reader_provider.dart';
-import '../services/settings_service.dart';
 
 class ReaderMenu extends StatefulWidget {
   final String title;
@@ -198,8 +197,6 @@ class _ReaderMenuState extends State<ReaderMenu>
             child: TabBar(
               controller: _tabController,
               indicatorColor: Colors.transparent,
-              //indicatorSize: TabBarIndicatorSize.tab,
-              //labelPadding: const EdgeInsets.symmetric(horizontal: 8),
               unselectedLabelColor: Global.menuIconColor,
               labelStyle: const TextStyle(
                 fontSize: 14,

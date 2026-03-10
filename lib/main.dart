@@ -10,6 +10,7 @@ import 'services/file_service.dart';
 import 'screens/bookshelf_screen.dart';
 import 'utils/color_utils.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SettingsService().init();
@@ -29,6 +30,7 @@ class _NovelReaderAppState extends State<NovelReaderApp>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
     WidgetsBinding.instance.addObserver(this);
   }
 

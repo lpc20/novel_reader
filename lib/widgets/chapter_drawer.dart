@@ -70,15 +70,16 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-            ),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+          ),
+          child: SizedBox(
+            height:80,
             child: Row(
               children: [
                 const Icon(Icons.menu_book, color: Global.menuHighlightColor),
@@ -86,13 +87,14 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
                         '目录',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: Global.menuTextColor,
                         ),
                       ),
                       Text(
@@ -109,53 +111,51 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
               ],
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: widget.chapters.length,
-              itemExtent: Global.listTileHeight,
-              itemBuilder: (context, index) {
-                final chapter = widget.chapters[index];
-                final isCurrent = index == widget.currentIndex;
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: widget.chapters.length,
+            itemExtent: Global.listTileHeight,
+            itemBuilder: (context, index) {
+              final chapter = widget.chapters[index];
+              final isCurrent = index == widget.currentIndex;
 
-                return ListTile(
-                  trailing: isCurrent
-                      ? const Icon(
-                          Icons.check_circle,
-                          color: Global.menuHighlightColor,
-                          size: 20,
-                        )
-                      : Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Global.menuTextColor,
-                          ),
+              return ListTile(
+                trailing: isCurrent
+                    ? const Icon(
+                        Icons.check_circle,
+                        color: Global.menuHighlightColor,
+                        size: 20,
+                      )
+                    : Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Global.menuTextColor,
                         ),
-                  title: Text(
-                    chapter.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isCurrent
-                          ? Global.menuHighlightColor
-                          : Colors.black87,
-                      fontWeight: isCurrent
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+                      ),
+                title: Text(
+                  chapter.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isCurrent
+                        ? Global.menuHighlightColor
+                        : Colors.black87,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),
-                  tileColor: isCurrent
-                      ? Global.menuHighlightColor.withValues(alpha: 0.1)
-                      : null,
-                  onTap: () => widget.onChapterSelected(index),
-                );
-              },
-            ),
+                ),
+                tileColor: isCurrent
+                    ? Global.menuHighlightColor.withValues(alpha: 0.1)
+                    : null,
+                onTap: () => widget.onChapterSelected(index),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

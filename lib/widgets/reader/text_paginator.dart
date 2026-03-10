@@ -1,4 +1,3 @@
-// lib/widgets/text_paginator.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +27,7 @@ class _TextPaginatorState extends State<TextPaginator> {
   late PageController _pageController;
   List<List<String>> _pages = [];
   bool _isCalculating = true;
-  final double _paragraphSpacing = 16.0;
+  static const double _paragraphSpacing = 16.0;
   int _currentPage = 0;
   int _totalPages = 0;
   Size? _lastSize;
@@ -159,7 +158,7 @@ class _TextPaginatorState extends State<TextPaginator> {
             pendingFragments.insert(0, splitResult.remaining);
           }
         } else {
-          // 即使一个字都放不下？极端情况，强制放入（避免死循环）
+          // 一个字都放不下？极端情况，内容顺延到下一页
           pages.add([...currentPage]);
           debugPrint('第${pages.length}页高度:$currentPageHeight');
           currentPage = [fragment];

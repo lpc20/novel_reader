@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:novel_reader/constants/global.dart';
-import '../services/settings_service.dart';
 
 class EmptyBookshelf extends StatelessWidget {
   final VoidCallback onImport;
