@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_constants.dart';
-import '../../services/settings_service.dart';
+import '../../constants/global.dart';
 
 class ChapterNavigationPanel extends StatelessWidget {
   final int currentChapterIndex;
@@ -30,7 +29,7 @@ class ChapterNavigationPanel extends StatelessWidget {
             icon: const Icon(Icons.chevron_left, size: 12),
             label: const Text('上一章'),
             style: TextButton.styleFrom(
-              foregroundColor: SettingsService.menuTextColor,
+              foregroundColor: Global.menuTextColor,
               padding: EdgeInsets.zero,
             ),
             onPressed: currentChapterIndex > 0
@@ -40,14 +39,16 @@ class ChapterNavigationPanel extends StatelessWidget {
         ),
         if (chaptersLength > 0)
           SizedBox(
-            width: AppConstants.chapterSliderWidth,
+            width: Global.chapterSliderWidth,
             child: Slider(
-              value: sliderValue ?? (currentChapterIndex + 1) / chaptersLength.toDouble(),
+              value:
+                  sliderValue ??
+                  (currentChapterIndex + 1) / chaptersLength.toDouble(),
               min: 0.0,
               max: 1.0,
-              activeColor: SettingsService.menuSliderActiveColor,
-              inactiveColor: SettingsService.menuSliderInactiveColor,
-              thumbColor: SettingsService.menuSliderThumbColor,
+              activeColor: Global.menuSliderActiveColor,
+              inactiveColor: Global.menuSliderInactiveColor,
+              thumbColor: Global.menuSliderThumbColor,
               onChanged: onSliderChange,
               onChangeEnd: onSliderChangeEnd,
             ),
@@ -58,7 +59,7 @@ class ChapterNavigationPanel extends StatelessWidget {
             iconAlignment: IconAlignment.end,
             label: const Text('下一章'),
             style: TextButton.styleFrom(
-              foregroundColor: SettingsService.menuTextColor,
+              foregroundColor: Global.menuTextColor,
               padding: EdgeInsets.zero,
             ),
             onPressed: currentChapterIndex < chaptersLength - 1

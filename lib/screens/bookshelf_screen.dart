@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:novel_reader/constants/global.dart';
 import 'package:provider/provider.dart';
 import '../providers/bookshelf_provider.dart';
 import '../models/novel.dart';
 import '../screens/reader_screen.dart';
 import '../utils/permission_helper.dart';
-import '../services/settings_service.dart';
 import '../widgets/book_card.dart';
 import '../widgets/empty_bookshelf.dart';
 
@@ -110,7 +110,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: SettingsService.menuBackgroundColor,
+      backgroundColor: Global.menuBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -123,18 +123,15 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: SettingsService.menuTextColor,
+              color: Global.menuTextColor,
             ),
           ),
           const SizedBox(height: 16),
           ListTile(
             title: const Text('按添加时间'),
-            textColor: SettingsService.menuTextColor,
+            textColor: Global.menuTextColor,
             trailing: currentSortType == SortType.byAddTime
-                ? const Icon(
-                    Icons.check,
-                    color: SettingsService.menuHighlightColor,
-                  )
+                ? const Icon(Icons.check, color: Global.menuHighlightColor)
                 : null,
             onTap: () {
               Navigator.pop(context);
@@ -143,12 +140,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           ),
           ListTile(
             title: const Text('按书名'),
-            textColor: SettingsService.menuTextColor,
+            textColor: Global.menuTextColor,
             trailing: currentSortType == SortType.byTitle
-                ? const Icon(
-                    Icons.check,
-                    color: SettingsService.menuHighlightColor,
-                  )
+                ? const Icon(Icons.check, color: Global.menuHighlightColor)
                 : null,
             onTap: () {
               Navigator.pop(context);
@@ -157,12 +151,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           ),
           ListTile(
             title: const Text('按文件大小'),
-            textColor: SettingsService.menuTextColor,
+            textColor: Global.menuTextColor,
             trailing: currentSortType == SortType.byFileSize
-                ? const Icon(
-                    Icons.check,
-                    color: SettingsService.menuHighlightColor,
-                  )
+                ? const Icon(Icons.check, color: Global.menuHighlightColor)
                 : null,
             onTap: () {
               Navigator.pop(context);
@@ -173,12 +164,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           ),
           ListTile(
             title: const Text('按最近阅读'),
-            textColor: SettingsService.menuTextColor,
+            textColor: Global.menuTextColor,
             trailing: currentSortType == SortType.byLastRead
-                ? const Icon(
-                    Icons.check,
-                    color: SettingsService.menuHighlightColor,
-                  )
+                ? const Icon(Icons.check, color: Global.menuHighlightColor)
                 : null,
             onTap: () {
               Navigator.pop(context);
@@ -197,10 +185,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('我的书架'),
+        title: const Text('我的书架'),
         centerTitle: true,
-        backgroundColor: SettingsService.menuBackgroundColor,
-        foregroundColor: SettingsService.menuTextColor,
         elevation: 0,
         actions: [
           IconButton(

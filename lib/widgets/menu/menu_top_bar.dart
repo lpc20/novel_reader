@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/settings_service.dart';
+import 'package:novel_reader/constants/global.dart';
 
 //阅读页面的顶部菜单栏
 class MenuTopBar extends StatelessWidget {
@@ -17,7 +17,7 @@ class MenuTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: SettingsService.menuBackgroundColor,
+      color: Global.menuBackgroundColor,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top,
         left: 8,
@@ -27,24 +27,18 @@ class MenuTopBar extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: SettingsService.menuIconColor,
-            ),
+            icon: const Icon(Icons.arrow_back, color: Global.menuIconColor),
             onPressed: onBack,
           ),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                color: SettingsService.menuTextColor,
-              ),
+              style: const TextStyle(fontSize: 16, color: Global.menuTextColor),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.menu, color: SettingsService.menuIconColor),
+            icon: const Icon(Icons.menu, color: Global.menuIconColor),
             onPressed: onOpenChapterList,
             tooltip: '目录',
           ),

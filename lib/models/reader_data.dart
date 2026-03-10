@@ -6,7 +6,6 @@ import '../providers/reader_provider.dart';
 class ReaderScreenData {
   final ReadingSettings settings;
   final List<String> paragraphs;
-  final Chapter? currentChapter;
   final bool isLoading;
   final int currentChapterIndex;
   final List<Chapter> chapters;
@@ -17,7 +16,6 @@ class ReaderScreenData {
   const ReaderScreenData({
     required this.settings,
     required this.paragraphs,
-    required this.currentChapter,
     required this.isLoading,
     required this.currentChapterIndex,
     required this.chapters,
@@ -26,11 +24,32 @@ class ReaderScreenData {
     required this.currentSearchIndex,
   });
 
+  ReaderScreenData copyWith({
+    ReadingSettings? settings,
+    List<String>? paragraphs,
+    bool? isLoading,
+    int? currentChapterIndex,
+    List<Chapter>? chapters,
+    String? searchQuery,
+    List<SearchResult>? searchResults,
+    int? currentSearchIndex,
+  }) {
+    return ReaderScreenData(
+      settings: settings ?? this.settings,
+      paragraphs: paragraphs ?? this.paragraphs,
+      isLoading: isLoading ?? this.isLoading,
+      currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
+      chapters: chapters ?? this.chapters,
+      searchQuery: searchQuery ?? this.searchQuery,
+      searchResults: searchResults ?? this.searchResults,
+      currentSearchIndex: currentSearchIndex ?? this.currentSearchIndex,
+    );
+  }
+
   factory ReaderScreenData.fromProvider(ReaderProvider provider) {
     return ReaderScreenData(
       settings: provider.settings,
       paragraphs: provider.getCurrentChapterContent(),
-      currentChapter: provider.currentChapter,
       isLoading: provider.isLoading,
       currentChapterIndex: provider.currentChapterIndex,
       chapters: provider.chapters,
@@ -45,8 +64,7 @@ class ReaderScreenData {
     if (identical(this, other)) return true;
     return other is ReaderScreenData &&
         other.settings == settings &&
-        other.paragraphs == paragraphs &&
-        other.currentChapter == currentChapter &&
+        listEquals(other.paragraphs, paragraphs) &&
         other.isLoading == isLoading &&
         other.currentChapterIndex == currentChapterIndex &&
         listEquals(other.chapters, chapters) &&
@@ -57,16 +75,15 @@ class ReaderScreenData {
 
   @override
   int get hashCode => Object.hash(
-        settings,
-        paragraphs,
-        currentChapter,
-        isLoading,
-        currentChapterIndex,
-        chapters,
-        searchQuery,
-        searchResults,
-        currentSearchIndex,
-      );
+    settings,
+    paragraphs,
+    isLoading,
+    currentChapterIndex,
+    chapters,
+    searchQuery,
+    searchResults,
+    currentSearchIndex,
+  );
 }
 
 class SearchResult {

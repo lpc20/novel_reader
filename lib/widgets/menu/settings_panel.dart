@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:novel_reader/constants/app_constants.dart';
-import '../../services/settings_service.dart';
+import 'package:novel_reader/constants/global.dart';
 import '../../utils/color_utils.dart';
 
 class SettingsPanel extends StatelessWidget {
@@ -8,10 +7,12 @@ class SettingsPanel extends StatelessWidget {
   final double lineHeight;
   final String fontFamily;
   final int themeIndex;
+  final bool usePageMode;
   final Function(double) onFontSizeChange;
   final Function(double) onLineHeightChange;
   final Function(String) onFontFamilyChange;
   final Function(int) onThemeChange;
+  final Function(bool) onUsePageModeChange;
 
   const SettingsPanel({
     super.key,
@@ -23,6 +24,8 @@ class SettingsPanel extends StatelessWidget {
     required this.onLineHeightChange,
     required this.onFontFamilyChange,
     required this.onThemeChange,
+    required this.usePageMode,
+    required this.onUsePageModeChange,
   });
 
   @override
@@ -40,6 +43,8 @@ class SettingsPanel extends StatelessWidget {
             _buildFontSizeControl(),
             const SizedBox(height: 12),
             _buildFontAndTheme(),
+            const SizedBox(height: 12),
+            _buildModeToggle(),
           ],
         ),
       ),
@@ -62,30 +67,27 @@ class SettingsPanel extends StatelessWidget {
       children: [
         const Text(
           '字体',
-          style: TextStyle(fontSize: 12, color: SettingsService.menuTextColor),
+          style: TextStyle(fontSize: 12, color: Global.menuTextColor),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: SettingsService.buttonTextColor,
+              color: Global.buttonTextColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: DropdownButton<String>(
               value: fontFamily,
               isExpanded: true,
-              dropdownColor: SettingsService.buttonTextColor,
+              dropdownColor: Global.buttonTextColor,
               underline: const SizedBox(),
-              style: const TextStyle(
-                fontSize: 12,
-                color: SettingsService.menuTextColor,
-              ),
-              items: SettingsService.fontFamilies.map((font) {
+              style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
+              items: Global.fontFamilies.map((font) {
                 return DropdownMenuItem(
                   value: font,
                   child: Text(
-                    SettingsService.fontFamilyNames[font]!,
+                    Global.fontFamilyNames[font]!,
                     style: TextStyle(fontSize: 12, fontFamily: font),
                   ),
                 );
@@ -108,26 +110,23 @@ class SettingsPanel extends StatelessWidget {
       children: [
         const Text(
           '主题',
-          style: TextStyle(fontSize: 12, color: SettingsService.menuTextColor),
+          style: TextStyle(fontSize: 12, color: Global.menuTextColor),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: SettingsService.buttonTextColor,
+              color: Global.buttonTextColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: DropdownButton<int>(
               value: themeIndex,
               isExpanded: true,
-              dropdownColor: SettingsService.buttonTextColor,
+              dropdownColor: Global.buttonTextColor,
               underline: const SizedBox(),
-              style: const TextStyle(
-                fontSize: 12,
-                color: SettingsService.menuTextColor,
-              ),
-              items: SettingsService.themes.asMap().entries.map((entry) {
+              style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
+              items: Global.themes.asMap().entries.map((entry) {
                 final index = entry.key;
                 final theme = entry.value;
                 return DropdownMenuItem(
@@ -165,6 +164,23 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
+  Widget _buildModeToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          '翻页模式',
+          style: TextStyle(fontSize: 12, color: Global.menuTextColor),
+        ),
+        Switch(
+          value: usePageMode,
+          activeThumbColor: Global.menuHighlightColor,
+          onChanged: onUsePageModeChange,
+        ),
+      ],
+    );
+  }
+
   Widget _buildFontSizeControl() {
     return Row(
       children: [
@@ -173,43 +189,40 @@ class SettingsPanel extends StatelessWidget {
             children: [
               const Text(
                 '字号',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: SettingsService.menuTextColor,
-                ),
+                style: TextStyle(fontSize: 12, color: Global.menuTextColor),
               ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.remove, size: 16),
-                onPressed: fontSize > AppConstants.minFontSize
+                onPressed: fontSize > Global.minFontSize
                     ? () => onFontSizeChange(fontSize - 2)
                     : null,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                color: SettingsService.menuTextColor,
+                color: Global.menuTextColor,
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: SettingsService.buttonTextColor,
+                  color: Global.buttonTextColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${fontSize.toInt()}',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: SettingsService.menuTextColor,
+                    color: Global.menuTextColor,
                   ),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 16),
-                onPressed: fontSize < AppConstants.maxFontSize
+                onPressed: fontSize < Global.maxFontSize
                     ? () => onFontSizeChange(fontSize + 2)
                     : null,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                color: SettingsService.menuTextColor,
+                color: Global.menuTextColor,
               ),
             ],
           ),
@@ -220,43 +233,40 @@ class SettingsPanel extends StatelessWidget {
             children: [
               const Text(
                 '行距',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: SettingsService.menuTextColor,
-                ),
+                style: TextStyle(fontSize: 12, color: Global.menuTextColor),
               ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.remove, size: 16),
-                onPressed: lineHeight > AppConstants.minLineHeight
+                onPressed: lineHeight > Global.minLineHeight
                     ? () => onLineHeightChange(lineHeight - 0.2)
                     : null,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                color: SettingsService.menuTextColor,
+                color: Global.menuTextColor,
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: SettingsService.buttonTextColor,
+                  color: Global.buttonTextColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   lineHeight.toStringAsFixed(1),
                   style: const TextStyle(
                     fontSize: 12,
-                    color: SettingsService.menuTextColor,
+                    color: Global.menuTextColor,
                   ),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 16),
-                onPressed: lineHeight < AppConstants.maxLineHeight
+                onPressed: lineHeight < Global.maxLineHeight
                     ? () => onLineHeightChange(lineHeight + 0.2)
                     : null,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                color: SettingsService.menuTextColor,
+                color: Global.menuTextColor,
               ),
             ],
           ),

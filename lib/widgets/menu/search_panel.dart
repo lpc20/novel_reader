@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/settings_service.dart';
+import 'package:novel_reader/constants/global.dart';
 
 class SearchPanel extends StatelessWidget {
   final TextEditingController searchController;
@@ -64,7 +64,7 @@ class SearchPanel extends StatelessWidget {
                   icon: const Icon(Icons.chevron_left, size: 16),
                   label: const Text('上一个'),
                   style: TextButton.styleFrom(
-                    foregroundColor: SettingsService.menuTextColor,
+                    foregroundColor: Global.menuTextColor,
                     padding: EdgeInsets.zero,
                   ),
                   onPressed: hasSearchResults
@@ -83,7 +83,7 @@ class SearchPanel extends StatelessWidget {
                       : '无结果',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: SettingsService.menuTextColor,
+                    color: Global.menuTextColor,
                   ),
                 ),
               ),
@@ -94,7 +94,7 @@ class SearchPanel extends StatelessWidget {
                   iconAlignment: IconAlignment.end,
                   label: const Text('下一个'),
                   style: TextButton.styleFrom(
-                    foregroundColor: SettingsService.menuTextColor,
+                    foregroundColor: Global.menuTextColor,
                     padding: EdgeInsets.zero,
                   ),
                   onPressed: hasSearchResults

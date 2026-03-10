@@ -1,25 +1,15 @@
 import 'dart:convert';
 
 class Novel {
-  //小说id
   final String id;
-  //小说标题
   final String title;
-  //小说文件路径
   final String filePath;
-  //小说文件大小
   final int fileSize;
-  //小说编码
   final String encoding;
-  //小说添加时间
   final DateTime addedTime;
-  //小说最后阅读时间
   final DateTime? lastReadTime;
-  //小说总章节数
   final int totalChapters;
-  //小说封面颜色
   final String coverColor;
-  //小说阅读进度（0-1）
   final double lastReadProgress;
 
   Novel({
@@ -107,8 +97,6 @@ class Novel {
       return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
   }
-
-  int get chaptersCount => totalChapters;
 
   @override
   String toString() {

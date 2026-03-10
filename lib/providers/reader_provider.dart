@@ -3,28 +3,44 @@ import '../models/chapter.dart';
 import '../models/reading_progress.dart';
 import '../models/bookmark.dart';
 import '../models/reader_data.dart';
-import '../services/file_service.dart';
 import '../services/settings_service.dart';
-import '../services/bookshelf_service.dart';
-import '../services/bookmarks_service.dart';
+import '../services/reader_repository.dart';
 
 class ReaderProvider extends ChangeNotifier {
-  final FileService _fileService = FileService();
   final SettingsService _settingsService = SettingsService();
-  final BookshelfService _bookshelfService = BookshelfService();
-  final BookmarksService _bookmarksService = BookmarksService();
+  final ReaderRepository _readerRepository;
 
   String _content = '';
   List<Chapter> _chapters = [];
   int _currentChapterIndex = 0;
   String? _novelId;
-  bool _isLoading = false;
+  bool _isLoading = true;
   double _scrollProgress = 0.0;
+  int _currentPage = 0;
+  int _totalPages = 0;
 
   // 搜索相关状态
   String _searchQuery = '';
   final List<SearchResult> _searchResults = [];
   int _currentSearchIndex = -1;
+
+  ReaderScreenData get screenData => ReaderScreenData(
+    settings: settings,
+    paragraphs: getCurrentChapterContent(),
+    isLoading: _isLoading,
+    currentChapterIndex: _currentChapterIndex,
+    chapters: _chapters,
+    searchQuery: _searchQuery,
+    searchResults: List.unmodifiable(_searchResults),
+    currentSearchIndex: _currentSearchIndex,
+  );
+
+  ReaderProvider({ReaderRepository? readerRepository})
+    : _readerRepository = readerRepository ?? ReaderRepository();
+
+  void setIsLoading(bool value) {
+    _isLoading = value;
+  }
 
   String get content => _content;
   List<Chapter> get chapters => _chapters;
@@ -35,6 +51,8 @@ class ReaderProvider extends ChangeNotifier {
       : null;
   bool get isLoading => _isLoading;
   double get scrollProgress => _scrollProgress;
+  int get currentPage => _currentPage;
+  int get totalPages => _totalPages;
   ReadingSettings get settings => _settingsService.settings;
   String? get novelId => _novelId;
   String get searchQuery => _searchQuery;
@@ -52,10 +70,16 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _content = await _fileService.readFileContent(filePath, encoding);
-      _chapters = await _fileService.parseChapters(_content, cacheKey: novelId);
+      _content = await _readerRepository.loadContent(
+        filePath: filePath,
+        encoding: encoding,
+      );
+      _chapters = await _readerRepository.parseChapters(
+        content: _content,
+        cacheKey: novelId,
+      );
 
-      final progress = _bookshelfService.getProgress(novelId);
+      final progress = _readerRepository.getProgress(novelId);
       if (progress != null && progress.chapterIndex < _chapters.length) {
         _currentChapterIndex = progress.chapterIndex;
         _scrollProgress = progress.scrollProgress;
@@ -64,12 +88,13 @@ class ReaderProvider extends ChangeNotifier {
         _scrollProgress = 0.0;
       }
 
-      await _bookshelfService.updateLastReadTime(novelId);
+      await _readerRepository.updateLastReadTime(novelId);
     } catch (e) {
       debugPrint('Error loading novel: $e');
     }
 
     _isLoading = false;
+    debugPrint('Chapters loaded: ${_chapters.length}');
     notifyListeners();
   }
 
@@ -100,7 +125,6 @@ class ReaderProvider extends ChangeNotifier {
           .where((p) => p.trim().isNotEmpty)
           .toList();
     }
-
     return fullContent.split('\n').where((p) => p.trim().isNotEmpty).toList();
   }
 
@@ -133,23 +157,22 @@ class ReaderProvider extends ChangeNotifier {
   Future<void> _saveProgress() async {
     if (_novelId == null) return;
 
-    await _bookshelfService.saveProgress(
+    await _readerRepository.saveProgress(
       ReadingProgress(
         novelId: _novelId!,
         chapterIndex: _currentChapterIndex,
-        positionInChapter: 0,
         scrollProgress: _scrollProgress,
       ),
     );
     if (_chapters.isNotEmpty) {
       final overallProgress =
           (_currentChapterIndex + _scrollProgress) / _chapters.length;
-      final novel = _bookshelfService.getNovel(_novelId!);
+      final novel = _readerRepository.getNovel(_novelId!);
       if (novel != null) {
         final updatedNovel = novel.copyWith(
           lastReadProgress: overallProgress.clamp(0.0, 1.0),
         );
-        await _bookshelfService.updateNovel(updatedNovel);
+        await _readerRepository.updateNovel(updatedNovel);
       }
     }
   }
@@ -172,6 +195,24 @@ class ReaderProvider extends ChangeNotifier {
   Future<void> setTheme(int index) async {
     await _settingsService.setTheme(index);
     notifyListeners();
+  }
+
+  Future<void> setUsePageMode(bool value) async {
+    await _settingsService.setUsePageMode(value);
+    notifyListeners();
+  }
+
+  void updatePageInfo({required int currentPage, required int totalPages}) {
+    _currentPage = currentPage;
+    _totalPages = totalPages;
+    if (_chapters.isNotEmpty) {
+      final overallProgress =
+          (_currentChapterIndex +
+              (_totalPages == 0 ? 0.0 : currentPage / totalPages)) /
+          _chapters.length;
+      _scrollProgress = overallProgress.clamp(0.0, 1.0);
+    }
+    _saveProgress();
   }
 
   // 搜索相关方法
@@ -260,17 +301,17 @@ class ReaderProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    await _bookmarksService.addBookmark(bookmark);
+    await _readerRepository.addBookmark(bookmark);
     notifyListeners();
   }
 
   Future<void> removeBookmark(String bookmarkId) async {
-    await _bookmarksService.removeBookmark(bookmarkId);
+    await _readerRepository.removeBookmark(bookmarkId);
     notifyListeners();
   }
 
   List<Bookmark> getBookmarks() {
     if (_novelId == null) return [];
-    return _bookmarksService.getBookmarks(_novelId!);
+    return _readerRepository.getBookmarks(_novelId!);
   }
 }

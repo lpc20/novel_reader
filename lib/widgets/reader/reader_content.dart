@@ -42,7 +42,7 @@ class ReaderContent extends StatelessWidget {
                           ? null
                           : settings.fontFamily,
                     ),
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

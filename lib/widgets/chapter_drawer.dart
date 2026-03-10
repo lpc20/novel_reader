@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:novel_reader/constants/app_constants.dart';
-import 'package:novel_reader/services/settings_service.dart';
+import 'package:novel_reader/constants/global.dart';
 import '../models/chapter.dart';
 
 class ChapterDrawer extends StatefulWidget {
@@ -34,11 +33,6 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
   @override
   void didUpdateWidget(ChapterDrawer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // if (widget.currentIndex != oldWidget.currentIndex) {
-    //   debugPrint(
-    //     'ChapterDrawer: 章节从 ${oldWidget.currentIndex} 变为 ${widget.currentIndex}',
-    //   );
-    // }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToCurrentChapter();
     });
@@ -59,7 +53,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
     }
 
     if (widget.currentIndex >= 3) {
-      const itemHeight = AppConstants.listTileHeight;
+      const itemHeight = Global.listTileHeight;
       final offset = (widget.currentIndex - 3) * itemHeight;
       _scrollController.jumpTo(offset);
     } else {
@@ -87,10 +81,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.menu_book,
-                  color: SettingsService.menuHighlightColor,
-                ),
+                const Icon(Icons.menu_book, color: Global.menuHighlightColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -122,7 +113,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
             child: ListView.builder(
               controller: _scrollController,
               itemCount: widget.chapters.length,
-              itemExtent: AppConstants.listTileHeight,
+              itemExtent: Global.listTileHeight,
               itemBuilder: (context, index) {
                 final chapter = widget.chapters[index];
                 final isCurrent = index == widget.currentIndex;
@@ -131,14 +122,14 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                   trailing: isCurrent
                       ? const Icon(
                           Icons.check_circle,
-                          color: SettingsService.menuHighlightColor,
+                          color: Global.menuHighlightColor,
                           size: 20,
                         )
                       : Text(
                           '${index + 1}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: SettingsService.menuTextColor,
+                            color: Global.menuTextColor,
                           ),
                         ),
                   title: Text(
@@ -148,7 +139,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                     style: TextStyle(
                       fontSize: 14,
                       color: isCurrent
-                          ? SettingsService.menuHighlightColor
+                          ? Global.menuHighlightColor
                           : Colors.black87,
                       fontWeight: isCurrent
                           ? FontWeight.bold
@@ -156,9 +147,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
                     ),
                   ),
                   tileColor: isCurrent
-                      ? SettingsService.menuHighlightColor.withValues(
-                          alpha: 0.1,
-                        )
+                      ? Global.menuHighlightColor.withValues(alpha: 0.1)
                       : null,
                   onTap: () => widget.onChapterSelected(index),
                 );

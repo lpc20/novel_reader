@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/global.dart';
 import 'package:provider/provider.dart';
 import 'menu/menu_top_bar.dart';
 import 'menu/chapter_navigation_panel.dart';
@@ -14,6 +15,7 @@ class ReaderMenu extends StatefulWidget {
   final VoidCallback onClose;
   final VoidCallback onChapterList;
   final VoidCallback onSearch;
+  final Function(int) onChapterChange;
   final TextEditingController searchController;
 
   const ReaderMenu({
@@ -23,6 +25,7 @@ class ReaderMenu extends StatefulWidget {
     required this.onChapterList,
     required this.onSearch,
     required this.searchController,
+    required this.onChapterChange,
   });
 
   @override
@@ -88,7 +91,7 @@ class _ReaderMenuState extends State<ReaderMenu>
 
   Widget _buildBottomPanel(BuildContext context, MenuData data) {
     return Container(
-      color: SettingsService.menuBackgroundColor,
+      color: Global.menuBackgroundColor,
       padding: EdgeInsets.only(
         top: 16,
         bottom: MediaQuery.of(context).padding.bottom,
@@ -106,8 +109,7 @@ class _ReaderMenuState extends State<ReaderMenu>
                     child: ChapterNavigationPanel(
                       currentChapterIndex: data.currentChapterIndex,
                       chaptersLength: data.chaptersLength,
-                      onChapterChange: (index) =>
-                          context.read<ReaderProvider>().goToChapter(index),
+                      onChapterChange: widget.onChapterChange,
                       sliderValue: _sliderValue,
                       onSliderChange: (value) {
                         setState(() {
@@ -141,6 +143,12 @@ class _ReaderMenuState extends State<ReaderMenu>
                           context.read<ReaderProvider>().setFontFamily(font),
                       onThemeChange: (index) =>
                           context.read<ReaderProvider>().setTheme(index),
+                      usePageMode: context
+                          .read<ReaderProvider>()
+                          .settings
+                          .usePageMode,
+                      onUsePageModeChange: (value) =>
+                          context.read<ReaderProvider>().setUsePageMode(value),
                     ),
                   )
                 else if (_currentTabIndex == 2)
@@ -182,7 +190,7 @@ class _ReaderMenuState extends State<ReaderMenu>
           ),
           Container(
             height: 1,
-            color: SettingsService.menuIconColor,
+            color: Global.menuIconColor,
             margin: const EdgeInsets.symmetric(vertical: 1),
           ),
           Container(
@@ -192,10 +200,10 @@ class _ReaderMenuState extends State<ReaderMenu>
               indicatorColor: Colors.transparent,
               //indicatorSize: TabBarIndicatorSize.tab,
               //labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-              unselectedLabelColor: SettingsService.menuIconColor,
+              unselectedLabelColor: Global.menuIconColor,
               labelStyle: const TextStyle(
                 fontSize: 14,
-                color: SettingsService.menuHighlightColor,
+                color: Global.menuHighlightColor,
               ),
               unselectedLabelStyle: const TextStyle(fontSize: 12),
               tabs: const [

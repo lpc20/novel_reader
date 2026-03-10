@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/global.dart';
 import '../../models/bookmark.dart';
-import '../../services/settings_service.dart';
 
 class BookmarkPanel extends StatelessWidget {
   final List<Bookmark> bookmarks;
@@ -25,29 +25,19 @@ class BookmarkPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
-          Icon(
-            Icons.bookmark_outline,
-            size: 24,
-            color: SettingsService.menuTextColor,
-          ),
+          Icon(Icons.bookmark_outline, size: 24, color: Global.menuTextColor),
           const SizedBox(height: 12),
           const Text(
             '暂无书签',
-            style: TextStyle(
-              fontSize: 14,
-              color: SettingsService.menuTextColor,
-            ),
+            style: TextStyle(fontSize: 14, color: Global.menuTextColor),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: onAddBookmark,
             style: TextButton.styleFrom(
-              backgroundColor: SettingsService.buttonBackgroundColor,
-              foregroundColor: SettingsService.buttonHighlightColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              backgroundColor: Global.buttonBackgroundColor,
+              foregroundColor: Global.buttonHighlightColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -72,18 +62,15 @@ class BookmarkPanel extends StatelessWidget {
               children: [
                 const Text(
                   '书签',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: SettingsService.menuTextColor,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Global.menuTextColor),
                 ),
                 ElevatedButton.icon(
                   onPressed: onAddBookmark,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('添加'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SettingsService.buttonBackgroundColor,
-                    foregroundColor: SettingsService.buttonHighlightColor,
+                    backgroundColor: Global.buttonBackgroundColor,
+                    foregroundColor: Global.buttonHighlightColor,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -101,7 +88,7 @@ class BookmarkPanel extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: SettingsService.menuDividerColor,
+                  color: Global.menuDividerColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -128,7 +115,7 @@ class BookmarkPanel extends StatelessWidget {
                           '${bookmark.createdAt.month}月${bookmark.createdAt.day}日',
                           style: const TextStyle(
                             fontSize: 11,
-                            color: SettingsService.buttonTextColor,
+                            color: Global.buttonTextColor,
                           ),
                         ),
                         Row(
@@ -139,8 +126,8 @@ class BookmarkPanel extends StatelessWidget {
                                 onCloseMenu();
                               },
                               style: TextButton.styleFrom(
-                                foregroundColor: SettingsService.menuHighlightColor,
-                                backgroundColor: SettingsService.buttonBackgroundColor,
+                                foregroundColor: Global.menuHighlightColor,
+                                backgroundColor: Global.buttonBackgroundColor,
                               ),
                               child: const Text('前往'),
                             ),

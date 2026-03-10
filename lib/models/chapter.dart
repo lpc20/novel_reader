@@ -4,6 +4,8 @@ class Chapter {
   final int startPosition;
   final int endPosition;
 
+  int get length => endPosition - startPosition;
+
   Chapter({
     required this.index,
     required this.title,
@@ -11,7 +13,7 @@ class Chapter {
     required this.endPosition,
   });
 
-  int get length => endPosition - startPosition;
+
 
   @override
   bool operator ==(Object other) {

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:novel_reader/constants/app_constants.dart';
+import 'package:novel_reader/constants/global.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/novel.dart';
 import '../models/reading_progress.dart';
@@ -16,8 +16,8 @@ class BookshelfService {
   List<Novel> _novels = [];
   Map<String, ReadingProgress> _progressMap = {};
   String? _dataPath;
-  final _progressDebouncer = Debouncer(delay: AppConstants.debounceDelay);
-  final _novelsDebouncer = Debouncer(delay: AppConstants.debounceDelay);
+  final _progressDebouncer = Debouncer(delay: Global.debounceDelay);
+  final _novelsDebouncer = Debouncer(delay: Global.debounceDelay);
 
   List<Novel> get novels => List.unmodifiable(_novels);
 
