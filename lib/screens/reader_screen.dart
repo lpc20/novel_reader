@@ -68,7 +68,10 @@ class _ReaderScreenState extends State<ReaderScreen>
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top],
+    );
     _scrollController.dispose();
     _searchController.dispose();
     _menuAnimationController.dispose();
@@ -134,7 +137,10 @@ class _ReaderScreenState extends State<ReaderScreen>
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     } else {
       _menuAnimationController.forward(from: 0);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [SystemUiOverlay.top],
+      );
     }
     setState(() {
       _showMenu = !_showMenu;
@@ -321,6 +327,12 @@ class _ReaderScreenState extends State<ReaderScreen>
 
   void _onSearch() {
     final provider = context.read<ReaderProvider>();
+
+    // 检查是否为分页模式，如果是则不执行搜索
+    if (provider.settings.usePageMode) {
+      return;
+    }
+
     final query = _searchController.text.trim();
 
     if (query.isEmpty) {

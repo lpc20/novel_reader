@@ -89,6 +89,8 @@ class _ReaderMenuState extends State<ReaderMenu>
   }
 
   Widget _buildBottomPanel(BuildContext context, MenuData data) {
+    final usePageMode = context.read<ReaderProvider>().settings.usePageMode;
+
     return Container(
       color: Global.menuBackgroundColor,
       padding: EdgeInsets.only(
@@ -142,34 +144,47 @@ class _ReaderMenuState extends State<ReaderMenu>
                           context.read<ReaderProvider>().setFontFamily(font),
                       onThemeChange: (index) =>
                           context.read<ReaderProvider>().setTheme(index),
-                      usePageMode: context
-                          .read<ReaderProvider>()
-                          .settings
-                          .usePageMode,
+                      usePageMode: usePageMode,
                       onUsePageModeChange: (value) =>
                           context.read<ReaderProvider>().setUsePageMode(value),
                     ),
                   )
                 else if (_currentTabIndex == 2)
                   RepaintBoundary(
-                    child: SearchPanel(
-                      searchController: widget.searchController,
-                      onSearch: widget.onSearch,
-                      hasSearchResults: context
-                          .read<ReaderProvider>()
-                          .hasSearchResults,
-                      currentSearchIndex: context
-                          .read<ReaderProvider>()
-                          .currentSearchIndex,
-                      searchResultsLength: context
-                          .read<ReaderProvider>()
-                          .searchResults
-                          .length,
-                      onPreviousResult: () =>
-                          context.read<ReaderProvider>().previousSearchResult(),
-                      onNextResult: () =>
-                          context.read<ReaderProvider>().nextSearchResult(),
-                    ),
+                    child: usePageMode
+                        ? Container(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: Text(
+                                '分页模式下搜索功能不可用',
+                                style: TextStyle(
+                                  color: Global.menuTextColor,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          )
+                        : SearchPanel(
+                            searchController: widget.searchController,
+                            onSearch: widget.onSearch,
+                            hasSearchResults: context
+                                .read<ReaderProvider>()
+                                .hasSearchResults,
+                            currentSearchIndex: context
+                                .read<ReaderProvider>()
+                                .currentSearchIndex,
+                            searchResultsLength: context
+                                .read<ReaderProvider>()
+                                .searchResults
+                                .length,
+                            onPreviousResult: () => context
+                                .read<ReaderProvider>()
+                                .previousSearchResult(),
+                            onNextResult: () => context
+                                .read<ReaderProvider>()
+                                .nextSearchResult(),
+                          ),
                   )
                 else if (_currentTabIndex == 3)
                   RepaintBoundary(
