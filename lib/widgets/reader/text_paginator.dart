@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:novel_reader/providers/reader_view_model.dart';
+import 'package:provider/provider.dart';
 
 class TextPaginator extends StatefulWidget {
   final List<String> paragraphs;
@@ -31,6 +33,7 @@ class _TextPaginatorState extends State<TextPaginator> {
   int _currentPage = 0;
   int _totalPages = 0;
   Size? _lastSize;
+  bool _isBackward = false;
 
   @override
   void initState() {
@@ -41,7 +44,7 @@ class _TextPaginatorState extends State<TextPaginator> {
           _currentPage = _pageController.page?.round() ?? 0;
         });
       });
-    _calculatePages();
+    _calculatePages(isBackward: false);
   }
 
   @override
@@ -50,7 +53,7 @@ class _TextPaginatorState extends State<TextPaginator> {
     final currentSize = MediaQuery.sizeOf(context);
     if (_lastSize != currentSize) {
       _lastSize = currentSize;
-      _calculatePages();
+      _calculatePages(isBackward: false);
     }
   }
 
@@ -59,7 +62,13 @@ class _TextPaginatorState extends State<TextPaginator> {
     super.didUpdateWidget(oldWidget);
     if (!listEquals(oldWidget.paragraphs, widget.paragraphs) ||
         !_styleEquals(oldWidget.style, widget.style)) {
-      _calculatePages();
+      // 章节内容变化时，重新计算分页
+      // 如果是返回上一章，则跳转到最后一页；否则跳转到第一页
+      _currentPage = _isBackward ? -1 : 0; // -1表示稍后跳转到最后一页
+      if (_pageController.hasClients && !_isBackward) {
+        _pageController.jumpToPage(0);
+      }
+      _calculatePages(isBackward: _isBackward);
     }
   }
 
@@ -81,19 +90,24 @@ class _TextPaginatorState extends State<TextPaginator> {
   }
 
   // === 核心：支持段落跨页的分页逻辑 ===
-  Future<void> _calculatePages() async {
+  Future<void> _calculatePages({bool isBackward = false}) async {
     if (widget.paragraphs.isEmpty) {
-      _updatePages([]);
+      _updatePages([], isBackward: isBackward);
       return;
     }
 
+    setState(() {
+      _isCalculating = true;
+    });
+
+    // 使用 microtask 让 UI 先显示加载状态，然后在下一帧执行计算
     await Future.microtask(() {});
     if (!mounted) return;
+
     final mediaQuery = MediaQuery.maybeOf(context);
     if (mediaQuery == null) return;
 
     final (usableWidth, usableHeight) = _getUsableSize();
-    debugPrint('宽度:$usableWidth\t高度:$usableHeight');
     final effectiveStyle = widget.style;
     final titleStyle = effectiveStyle.copyWith(
       fontSize: effectiveStyle.fontSize! + 6,
@@ -107,7 +121,7 @@ class _TextPaginatorState extends State<TextPaginator> {
       titleStyle,
     );
 
-    // 所有待处理的“文本片段”队列（初始为原始段落）
+    // 所有待处理的"文本片段"队列（初始为原始段落）
     final pendingFragments = <String>[...widget.paragraphs];
 
     while (pendingFragments.isNotEmpty) {
@@ -149,7 +163,6 @@ class _TextPaginatorState extends State<TextPaginator> {
               spacing +
               _measureTextHeight(splitResult.fit, usableWidth, effectiveStyle);
           pages.add([...currentPage]);
-          debugPrint('第${pages.length}页高度:$currentPageHeight');
           currentPage = [];
           currentPageHeight = 0.0;
 
@@ -160,7 +173,6 @@ class _TextPaginatorState extends State<TextPaginator> {
         } else {
           // 一个字都放不下？极端情况，内容顺延到下一页
           pages.add([...currentPage]);
-          debugPrint('第${pages.length}页高度:$currentPageHeight');
           currentPage = [fragment];
           currentPageHeight = _measureTextHeight(
             fragment,
@@ -173,10 +185,10 @@ class _TextPaginatorState extends State<TextPaginator> {
     // 添加最后一页
     if (currentPage.isNotEmpty) {
       pages.add(currentPage);
-      debugPrint('第${pages.length}页高度:$currentPageHeight');
     }
 
-    _updatePages(pages);
+    if (!mounted) return;
+    _updatePages(pages, isBackward: isBackward);
   }
 
   /// 拆分文本：返回 fit（可放入的部分）和 remaining（剩余部分）
@@ -195,18 +207,20 @@ class _TextPaginatorState extends State<TextPaginator> {
       style,
     );
     if (firstCharHeight > maxHeight) {
-      // 连一个字符都放不下？不太可能，但安全起见
       return _SplitResult(fit: '', remaining: text);
     }
-
-    // 贪心法：逐字符尝试（可优化为二分查找）
+    // 二分查找最佳分割点
+    int left = 1, right = text.length;
     int bestIndex = 0;
-    for (int i = 1; i <= text.length; i++) {
-      final h = _measureTextHeight(text.substring(0, i), maxWidth, style);
+    while (left <= right) {
+      final mid = (left + right) ~/ 2;
+      final h = _measureTextHeight(text.substring(0, mid), maxWidth, style);
+
       if (h <= maxHeight) {
-        bestIndex = i;
+        bestIndex = mid;
+        left = mid + 1;
       } else {
-        break;
+        right = mid - 1;
       }
     }
 
@@ -227,12 +241,34 @@ class _TextPaginatorState extends State<TextPaginator> {
     return _SplitResult(fit: fit, remaining: remaining);
   }
 
-  void _updatePages(List<List<String>> pages) {
+  double _measureTextHeight(String text, double maxWidth, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: null,
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.start,
+      strutStyle: StrutStyle.disabled,
+    )..layout(maxWidth: maxWidth);
+    return painter.height;
+  }
+
+  void _updatePages(List<List<String>> pages, {bool isBackward = false}) {
     if (!mounted) return;
     setState(() {
       _pages = pages;
       _isCalculating = false;
       _totalPages = _pages.length;
+
+      // 如果是返回上一章，跳转到最后一页
+      if (isBackward && _pages.isNotEmpty) {
+        _currentPage = _pages.length - 1;
+        // 在下一帧跳转到最后一页
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients && mounted) {
+            _pageController.jumpToPage(_currentPage);
+          }
+        });
+      }
     });
   }
 
@@ -240,7 +276,7 @@ class _TextPaginatorState extends State<TextPaginator> {
     final direction = Directionality.of(context);
     final horizontalPadding = widget.padding.resolve(direction).horizontal;
     final usableWidth = MediaQuery.of(context).size.width - horizontalPadding;
-    final usableHeight = MediaQuery.of(context).size.height * 0.9;
+    final usableHeight = MediaQuery.of(context).size.height * 0.88;
     return (usableWidth, usableHeight);
   }
 
@@ -276,17 +312,6 @@ class _TextPaginatorState extends State<TextPaginator> {
     );
   }
 
-  double _measureTextHeight(String text, double maxWidth, TextStyle style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: null,
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.start,
-      strutStyle: StrutStyle.disabled,
-    )..layout(maxWidth: maxWidth);
-    return painter.height;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isCalculating) {
@@ -301,6 +326,12 @@ class _TextPaginatorState extends State<TextPaginator> {
         PageView.builder(
           controller: _pageController,
           itemCount: _pages.length,
+          onPageChanged: (index) {
+            context.read<ReaderViewModel>().updatePageInfo(
+              currentPage: index + 1,
+              totalPages: _pages.length,
+            );
+          },
           itemBuilder: (context, index) {
             return Padding(
               padding: widget.padding,
@@ -329,14 +360,8 @@ class _TextPaginatorState extends State<TextPaginator> {
                   curve: Curves.easeOut,
                 );
               } else {
-                debugPrint('上一章');
+                _isBackward = true;
                 widget.onPreviousChapter();
-                // 重置到上一章的第一页
-                _pageController.animateToPage(
-                  _pages.length - 1,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                );
               }
             },
             child: Container(
@@ -356,14 +381,8 @@ class _TextPaginatorState extends State<TextPaginator> {
                   curve: Curves.easeIn,
                 );
               } else {
-                debugPrint('下一章');
+                _isBackward = false;
                 widget.onNextChapter();
-                // 重置到下一章的第一页
-                _pageController.animateToPage(
-                  0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeIn,
-                );
               }
             },
             child: Container(
@@ -374,12 +393,12 @@ class _TextPaginatorState extends State<TextPaginator> {
           ),
         ),
         Positioned(
-          bottom: 0,
-          right: 0,
+          bottom: 5,
+          right: 5,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.black54,
+              color: Colors.transparent,
             ),
             child: Text('${_currentPage + 1}/$_totalPages'),
           ),

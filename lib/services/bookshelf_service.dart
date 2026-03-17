@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:novel_reader/constants/global.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/novel.dart';
@@ -37,8 +36,7 @@ class BookshelfService {
           final List<dynamic> jsonList = json.decode(content);
           _novels = jsonList.map((json) => Novel.fromMap(json)).toList();
         }
-      } catch (e) {
-        debugPrint('加载小说列表失败: $e');
+      } catch (_) {
         // 如果解析失败，重置为空列表
         _novels = [];
       }
@@ -50,8 +48,8 @@ class BookshelfService {
     try {
       final jsonList = _novels.map((novel) => novel.toMap()).toList();
       await file.writeAsString(json.encode(jsonList));
-    } catch (e) {
-      debugPrint('保存小说列表失败: $e');
+    } catch (_) {
+      // 保存失败静默处理
     }
   }
 
@@ -72,8 +70,7 @@ class BookshelfService {
             (key, value) => MapEntry(key, ReadingProgress.fromMap(value)),
           );
         }
-      } catch (e) {
-        debugPrint('加载阅读进度失败: $e');
+      } catch (_) {
         // 如果解析失败，重置为空映射
         _progressMap = {};
       }
@@ -87,8 +84,8 @@ class BookshelfService {
         (key, value) => MapEntry(key, value.toMap()),
       );
       await file.writeAsString(json.encode(jsonMap));
-    } catch (e) {
-      debugPrint('保存阅读进度失败: $e');
+    } catch (_) {
+      // 保存失败静默处理
     }
   }
 
@@ -112,8 +109,8 @@ class BookshelfService {
         if (await file.exists()) {
           await file.delete();
         }
-      } catch (e) {
-        debugPrint('删除文件失败: $e');
+      } catch (_) {
+        // 删除失败静默处理
       }
     }
 

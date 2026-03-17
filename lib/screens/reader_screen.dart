@@ -5,11 +5,10 @@ import 'package:novel_reader/widgets/chapter_drawer.dart';
 import 'package:novel_reader/widgets/reader/text_paginator.dart';
 import 'package:provider/provider.dart';
 import '../models/reader_data.dart';
-import '../providers/reader_provider.dart';
+import '../providers/reader_view_model.dart';
 import '../widgets/reader_menu.dart';
 import '../models/novel.dart';
 import '../utils/color_utils.dart';
-import '../widgets/reader/reader_content.dart';
 import '../widgets/reader/chapter_navigation.dart';
 
 class ReaderScreen extends StatefulWidget {
@@ -79,12 +78,12 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _onSearchChanged() {
-    final provider = context.read<ReaderProvider>();
+    final provider = context.read<ReaderViewModel>();
     provider.performSearch(_searchController.text);
   }
 
   Future<void> _loadNovel() async {
-    final readerProvider = context.read<ReaderProvider>();
+    final readerProvider = context.read<ReaderViewModel>();
     readerProvider.setIsLoading(true);
     await readerProvider.loadNovel(
       widget.novel.id,
@@ -124,7 +123,7 @@ class _ReaderScreenState extends State<ReaderScreen>
         final maxScrollExtent = position.maxScrollExtent;
         if (maxScrollExtent > 0) {
           final scrollProgress = position.pixels / maxScrollExtent;
-          context.read<ReaderProvider>().updateScrollProgress(scrollProgress);
+          context.read<ReaderViewModel>().updateScrollProgress(scrollProgress);
         }
       }
     }
@@ -153,7 +152,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _onChapterSelected(int index) {
-    final readerProvider = context.read<ReaderProvider>();
+    final readerProvider = context.read<ReaderViewModel>();
     if (index == readerProvider.currentChapterIndex) {
       _showDrawer = false;
       return;
@@ -178,7 +177,7 @@ class _ReaderScreenState extends State<ReaderScreen>
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: ColorUtils.parseColor(
-        context.select<ReaderProvider, String>(
+        context.select<ReaderViewModel, String>(
           (p) => p.settings.backgroundColor,
         ),
       ),
@@ -187,9 +186,12 @@ class _ReaderScreenState extends State<ReaderScreen>
         child: Stack(
           children: [
             // 主内容区域：根据阅读模式选择滚动或翻页
-            context.select<ReaderProvider, bool>((p) => p.settings.usePageMode)
+            context.select<ReaderViewModel, bool>((p) => p.settings.usePageMode)
                 ? _buildMainContentWithPaginator()
-                : _buildMainContentWithScrollView(),
+                : Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: _buildMainContentWithScrollView(),
+                  ),
             // 章节抽屉
             _buildChapterDrawer(screenWidth),
             // 阅读器菜单
@@ -201,7 +203,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Widget _buildMainContentWithScrollView() {
-    final data = context.select<ReaderProvider, ReaderScreenData>(
+    final data = context.select<ReaderViewModel, ReaderScreenData>(
       (p) => p.screenData,
     );
 
@@ -211,25 +213,135 @@ class _ReaderScreenState extends State<ReaderScreen>
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        ...ReaderContent(
-          paragraphs: data.paragraphs,
-          settings: data.settings,
-          searchResults: data.searchResults,
-          currentSearchIndex: data.currentSearchIndex,
-          chapterTitle: data.chapters[data.currentChapterIndex].title,
-        ).buildSlivers(),
+        ..._buildReaderContentSlivers(data),
         ChapterNavigation(
           currentChapterIndex: data.currentChapterIndex,
           chaptersLength: data.chapters.length,
           onChapterChange: _onChapterSelected,
           settings: data.settings,
-        ).buildSliver(),
+        ),
       ],
     );
   }
 
+  List<Widget> _buildReaderContentSlivers(ReaderScreenData data) {
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        sliver: SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Text(
+                  data.chapters[data.currentChapterIndex].title,
+                  style: TextStyle(
+                    fontSize: data.settings.fontSize + 6,
+                    fontWeight: FontWeight.bold,
+                    color: ColorUtils.parseColor(data.settings.textColor),
+                    height: 1.3,
+                    letterSpacing: 1.0,
+                    fontFamily: data.settings.fontFamily == 'system'
+                        ? 'OPPOSans'
+                        : data.settings.fontFamily,
+                  ),
+                  textAlign: TextAlign.left,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: ColorUtils.parseColor(data.settings.textColor),
+              ),
+            ],
+          ),
+        ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final paragraph = data.paragraphs[index];
+            final textSpan = _buildHighlightedText(paragraph, index, data);
+
+            return RepaintBoundary(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: RichText(text: textSpan, softWrap: true),
+              ),
+            );
+          }, childCount: data.paragraphs.length),
+        ),
+      ),
+    ];
+  }
+
+  TextSpan _buildHighlightedText(
+    String text,
+    int paragraphIndex,
+    ReaderScreenData data,
+  ) {
+    final textStyle = TextStyle(
+      fontSize: data.settings.fontSize,
+      color: ColorUtils.parseColor(data.settings.textColor),
+      height: data.settings.lineHeight,
+      fontWeight: FontWeight.normal,
+      fontFamily: data.settings.fontFamily == 'system'
+          ? 'OPPOSans'
+          : data.settings.fontFamily,
+    );
+
+    if (data.searchResults.isEmpty || data.currentSearchIndex < 0) {
+      return TextSpan(text: text, style: textStyle);
+    }
+
+    final currentResult = data.searchResults[data.currentSearchIndex];
+
+    if (currentResult.paragraphIndex != paragraphIndex) {
+      return TextSpan(text: text, style: textStyle);
+    }
+
+    final startIndex = currentResult.startIndex;
+    final endIndex = currentResult.endIndex;
+
+    if (startIndex == 0 && endIndex >= text.length) {
+      return TextSpan(
+        text: text,
+        style: textStyle.copyWith(
+          backgroundColor: const Color(0xFFFFB74D),
+          color: Colors.black,
+        ),
+      );
+    }
+
+    final spans = <TextSpan>[];
+
+    if (startIndex > 0) {
+      spans.add(
+        TextSpan(text: text.substring(0, startIndex), style: textStyle),
+      );
+    }
+
+    spans.add(
+      TextSpan(
+        text: text.substring(startIndex, endIndex),
+        style: textStyle.copyWith(
+          backgroundColor: const Color(0xFFFFB74D),
+          color: Colors.black,
+        ),
+      ),
+    );
+
+    if (endIndex < text.length) {
+      spans.add(TextSpan(text: text.substring(endIndex), style: textStyle));
+    }
+    return TextSpan(children: spans);
+  }
+
   Widget _buildMainContentWithPaginator() {
-    final data = context.select<ReaderProvider, ReaderScreenData>(
+    final data = context.select<ReaderViewModel, ReaderScreenData>(
       (p) => p.screenData,
     );
 
@@ -238,7 +350,7 @@ class _ReaderScreenState extends State<ReaderScreen>
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
       child: TextPaginator(
         paragraphs: data.paragraphs,
         chapterTitle: data.chapters[data.currentChapterIndex].title,
@@ -250,15 +362,15 @@ class _ReaderScreenState extends State<ReaderScreen>
               : data.settings.fontFamily,
           color: ColorUtils.parseColor(data.settings.textColor),
         ),
-        onNextChapter: () => context.read<ReaderProvider>().nextChapter(),
+        onNextChapter: () => context.read<ReaderViewModel>().nextChapter(),
         onPreviousChapter: () =>
-            context.read<ReaderProvider>().previousChapter(),
+            context.read<ReaderViewModel>().previousChapter(),
       ),
     );
   }
 
   Widget _buildChapterDrawer(double screenWidth) {
-    final data = context.select<ReaderProvider, ReaderScreenData>(
+    final data = context.select<ReaderViewModel, ReaderScreenData>(
       (p) => p.screenData,
     );
     return AnimatedPositioned(
@@ -303,7 +415,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   Widget _buildReaderMenu(double screenWidth) {
     return AnimatedOpacity(
       opacity: _showMenu ? 1.0 : 0.0,
-      duration: Global.fadeAnimationDuration,
+      duration: Global.menuAnimationDuration,
       curve: Curves.easeInOut,
       child: Visibility(
         visible: _showMenu,
@@ -326,7 +438,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   void _onSearch() {
-    final provider = context.read<ReaderProvider>();
+    final provider = context.read<ReaderViewModel>();
 
     // 检查是否为分页模式，如果是则不执行搜索
     if (provider.settings.usePageMode) {
@@ -358,7 +470,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   void _scrollToSearchResult() {
     if (!mounted) return;
 
-    final provider = context.read<ReaderProvider>();
+    final provider = context.read<ReaderViewModel>();
     if (provider.currentSearchIndex < 0 ||
         provider.currentSearchIndex >= provider.searchResults.length) {
       return;
@@ -392,7 +504,7 @@ class _ReaderScreenState extends State<ReaderScreen>
 
       _scrollController.animateTo(
         targetScroll.clamp(0.0, scrollPosition.maxScrollExtent),
-        duration: Global.menuAnimationDuration,
+        duration: Global.scrollToChapterDelay,
         curve: Curves.easeInOut,
       );
     }

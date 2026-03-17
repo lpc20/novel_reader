@@ -24,7 +24,6 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
   @override
   void initState() {
     super.initState();
-    debugPrint('ChapterDrawer initState');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToCurrentChapter();
     });
@@ -63,7 +62,6 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
 
   @override
   void dispose() {
-    debugPrint('ChapterDrawer dispose');
     _scrollController.dispose();
     super.dispose();
   }

@@ -49,30 +49,30 @@ class FileService {
       try {
         utf8.decode(bytes);
         return 'UTF-8';
-      } catch (e) {
-        debugPrint('UTF-8 解码验证失败: $e');
+      } catch (_) {
+        // UTF-8 解码失败，继续尝试其他编码
       }
     }
 
     try {
       await CharsetConverter.decode('gbk', bytes);
       return 'GBK';
-    } catch (e) {
-      debugPrint('GBK 解码验证失败: $e');
+    } catch (_) {
+      // GBK 解码失败，继续尝试其他编码
     }
 
     try {
       await CharsetConverter.decode('gb18030', bytes);
       return 'GB18030';
-    } catch (e) {
-      debugPrint('GB18030 解码验证失败: $e');
+    } catch (_) {
+      // GB18030 解码失败，继续尝试其他编码
     }
 
     try {
       await CharsetConverter.decode('big5', bytes);
       return 'BIG5';
-    } catch (e) {
-      debugPrint('BIG5 解码验证失败: $e');
+    } catch (_) {
+      // BIG5 解码失败，使用默认编码
     }
 
     return 'UTF-8';
@@ -127,7 +127,6 @@ class FileService {
     final bytes = await file.readAsBytes();
 
     String content;
-    //debugPrint('检测到编码: $encoding');
     if (encoding.toUpperCase() == 'UTF-8') {
       content = utf8.decode(bytes);
     } else if (encoding.toUpperCase() == 'GBK') {
@@ -304,7 +303,6 @@ class FileService {
   void clearCache() {
     _chapterCache.clear();
     _contentCache.clear();
-    debugPrint('缓存已清理');
   }
 
   // 清理指定小说的缓存
@@ -313,7 +311,6 @@ class FileService {
     _chapterCache.remove(novelId);
     // 清理内容缓存（通过匹配novelId）
     _contentCache.removeWhere((key, value) => key.contains(novelId));
-    debugPrint('小说 $novelId 的缓存已清理');
   }
 
   // 获取缓存大小
@@ -335,7 +332,6 @@ class FileService {
     final currentSize = getCacheSize();
     if (currentSize > maxSizeBytes) {
       clearCache();
-      debugPrint('缓存大小超过限制，已清理');
     }
   }
 }

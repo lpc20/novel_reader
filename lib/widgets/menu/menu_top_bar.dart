@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:novel_reader/constants/global.dart';
 
-//阅读页面的顶部菜单栏
 class MenuTopBar extends StatelessWidget {
   final String title;
   final VoidCallback onBack;

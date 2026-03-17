@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/bookmark.dart';
 
@@ -29,8 +28,7 @@ class BookmarksService {
         } else {
           _bookmarks = [];
         }
-      } catch (e) {
-        debugPrint('加载书签失败: $e');
+      } catch (_) {
         _bookmarks = [];
       }
     } else {
@@ -43,8 +41,8 @@ class BookmarksService {
     try {
       final jsonList = _bookmarks.map((bookmark) => bookmark.toMap()).toList();
       await file.writeAsString(json.encode(jsonList));
-    } catch (e) {
-      debugPrint('保存书签失败: $e');
+    } catch (_) {
+      // 保存失败静默处理
     }
   }
 

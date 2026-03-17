@@ -128,50 +128,6 @@ class _BookCardState extends State<BookCard>
                 ),
               ),
             ),
-            // if (widget.novel.lastReadProgress > 0)
-            // Positioned(
-            //   bottom: 0,
-            //   left: 0,
-            //   right: 0,
-            //   child: Container(
-            //     height: 4,
-            //     decoration: BoxDecoration(
-            //       color: Colors.white.withValues(alpha: 0.2),
-            //       borderRadius: const BorderRadius.vertical(
-            //         bottom: Radius.circular(16),
-            //       ),
-            //     ),
-            //     child: Container(
-            //       width: widget.novel.lastReadProgress * 100,
-            //       decoration: const BoxDecoration(
-            //         color: Colors.black,
-            //         borderRadius: BorderRadius.vertical(
-            //           bottom: Radius.circular(16),
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // if (widget.novel.lastReadProgress > 0)
-            // Positioned(
-            //   bottom: 10,
-            //   left: 2,
-            //   child: Container(
-            //     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            //     decoration: BoxDecoration(
-            //       color: Colors.white.withValues(alpha: 0.2),
-            //       borderRadius: BorderRadius.circular(12),
-            //     ),
-            //     child: Text(
-            //       '已读${(widget.novel.lastReadProgress * 100).toInt()}%',
-            //       style: TextStyle(
-            //         color: Colors.white,
-            //         fontSize: 10,
-            //         fontWeight: FontWeight.w500,
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),

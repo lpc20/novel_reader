@@ -7,7 +7,7 @@ import 'menu/settings_panel.dart';
 import 'menu/search_panel.dart';
 import 'menu/bookmark_panel.dart';
 import '../models/menu_data.dart';
-import '../providers/reader_provider.dart';
+import '../providers/reader_view_model.dart';
 
 class ReaderMenu extends StatefulWidget {
   final String title;
@@ -43,7 +43,6 @@ class _ReaderMenuState extends State<ReaderMenu>
 
   @override
   void initState() {
-    debugPrint('ReaderMenu initState');
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
@@ -57,7 +56,6 @@ class _ReaderMenuState extends State<ReaderMenu>
 
   @override
   void dispose() {
-    debugPrint('ReaderMenu dispose');
     _tabController.dispose();
     super.dispose();
   }
@@ -65,8 +63,8 @@ class _ReaderMenuState extends State<ReaderMenu>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Selector<ReaderProvider, MenuData>(
-      selector: (context, provider) => MenuData.fromProvider(provider),
+    return Selector<ReaderViewModel, MenuData>(
+      selector: (context, provider) => provider.menuData,
       builder: (context, data, child) {
         return Column(
           children: [
@@ -89,7 +87,7 @@ class _ReaderMenuState extends State<ReaderMenu>
   }
 
   Widget _buildBottomPanel(BuildContext context, MenuData data) {
-    final usePageMode = context.read<ReaderProvider>().settings.usePageMode;
+    final usePageMode = context.read<ReaderViewModel>().settings.usePageMode;
 
     return Container(
       color: Global.menuBackgroundColor,
@@ -120,7 +118,7 @@ class _ReaderMenuState extends State<ReaderMenu>
                       onSliderChangeEnd: (value) {
                         final targetChapter = (value * data.chaptersLength)
                             .floor();
-                        context.read<ReaderProvider>().goToChapter(
+                        context.read<ReaderViewModel>().goToChapter(
                           targetChapter,
                         );
                         setState(() {
@@ -137,16 +135,16 @@ class _ReaderMenuState extends State<ReaderMenu>
                       fontFamily: data.fontFamily,
                       themeIndex: data.themeIndex,
                       onFontSizeChange: (size) =>
-                          context.read<ReaderProvider>().setFontSize(size),
+                          context.read<ReaderViewModel>().setFontSize(size),
                       onLineHeightChange: (height) =>
-                          context.read<ReaderProvider>().setLineHeight(height),
+                          context.read<ReaderViewModel>().setLineHeight(height),
                       onFontFamilyChange: (font) =>
-                          context.read<ReaderProvider>().setFontFamily(font),
+                          context.read<ReaderViewModel>().setFontFamily(font),
                       onThemeChange: (index) =>
-                          context.read<ReaderProvider>().setTheme(index),
+                          context.read<ReaderViewModel>().setTheme(index),
                       usePageMode: usePageMode,
                       onUsePageModeChange: (value) =>
-                          context.read<ReaderProvider>().setUsePageMode(value),
+                          context.read<ReaderViewModel>().setUsePageMode(value),
                     ),
                   )
                 else if (_currentTabIndex == 2)
@@ -165,39 +163,11 @@ class _ReaderMenuState extends State<ReaderMenu>
                               ),
                             ),
                           )
-                        : SearchPanel(
-                            searchController: widget.searchController,
-                            onSearch: widget.onSearch,
-                            hasSearchResults: context
-                                .read<ReaderProvider>()
-                                .hasSearchResults,
-                            currentSearchIndex: context
-                                .read<ReaderProvider>()
-                                .currentSearchIndex,
-                            searchResultsLength: context
-                                .read<ReaderProvider>()
-                                .searchResults
-                                .length,
-                            onPreviousResult: () => context
-                                .read<ReaderProvider>()
-                                .previousSearchResult(),
-                            onNextResult: () => context
-                                .read<ReaderProvider>()
-                                .nextSearchResult(),
-                          ),
+                        : _buildSearchPanel(),
                   )
                 else if (_currentTabIndex == 3)
                   RepaintBoundary(
-                    child: BookmarkPanel(
-                      bookmarks: context.read<ReaderProvider>().getBookmarks(),
-                      onAddBookmark: () =>
-                          context.read<ReaderProvider>().addBookmark(),
-                      onRemoveBookmark: (id) =>
-                          context.read<ReaderProvider>().removeBookmark(id),
-                      onGoToBookmark: (index) =>
-                          context.read<ReaderProvider>().goToChapter(index),
-                      onCloseMenu: widget.onClose,
-                    ),
+                    child: _buildBookmarkPanel(),
                   ),
               ],
             ),
@@ -236,4 +206,65 @@ class _ReaderMenuState extends State<ReaderMenu>
       ),
     );
   }
+
+  Widget _buildSearchPanel() {
+    return Selector<ReaderViewModel, _SearchViewData>(
+      selector: (context, vm) => _SearchViewData(
+        hasResults: vm.hasSearchResults,
+        currentIndex: vm.currentSearchIndex,
+        resultsLength: vm.searchResults.length,
+      ),
+      builder: (context, data, child) {
+        return SearchPanel(
+          searchController: widget.searchController,
+          onSearch: widget.onSearch,
+          hasSearchResults: data.hasResults,
+          currentSearchIndex: data.currentIndex,
+          searchResultsLength: data.resultsLength,
+          onPreviousResult: () =>
+              context.read<ReaderViewModel>().previousSearchResult(),
+          onNextResult: () =>
+              context.read<ReaderViewModel>().nextSearchResult(),
+        );
+      },
+    );
+  }
+
+  Widget _buildBookmarkPanel() {
+    return Consumer<ReaderViewModel>(
+      builder: (context, vm, child) {
+        return BookmarkPanel(
+          bookmarks: vm.getBookmarks(),
+          onAddBookmark: () => vm.addBookmark(),
+          onRemoveBookmark: (id) => vm.removeBookmark(id),
+          onGoToBookmark: (index) => vm.goToChapter(index),
+          onCloseMenu: widget.onClose,
+        );
+      },
+    );
+  }
+}
+
+class _SearchViewData {
+  final bool hasResults;
+  final int currentIndex;
+  final int resultsLength;
+
+  const _SearchViewData({
+    required this.hasResults,
+    required this.currentIndex,
+    required this.resultsLength,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _SearchViewData &&
+        other.hasResults == hasResults &&
+        other.currentIndex == currentIndex &&
+        other.resultsLength == resultsLength;
+  }
+
+  @override
+  int get hashCode => Object.hash(hasResults, currentIndex, resultsLength);
 }

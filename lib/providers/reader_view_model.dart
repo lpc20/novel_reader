@@ -3,11 +3,11 @@ import '../models/chapter.dart';
 import '../models/reading_progress.dart';
 import '../models/bookmark.dart';
 import '../models/reader_data.dart';
-import '../services/settings_service.dart';
+import '../models/menu_data.dart';
 import '../services/reader_repository.dart';
+import '../services/settings_service.dart';
 
-class ReaderProvider extends ChangeNotifier {
-  final SettingsService _settingsService = SettingsService();
+class ReaderViewModel extends ChangeNotifier {
   final ReaderRepository _readerRepository;
 
   String _content = '';
@@ -24,6 +24,10 @@ class ReaderProvider extends ChangeNotifier {
   final List<SearchResult> _searchResults = [];
   int _currentSearchIndex = -1;
 
+  // 章节内容缓存，用于预加载
+  final Map<int, List<String>> _chapterContentCache = {};
+  static const int _maxPreloadChapters = 3; // 最多预加载3个章节
+
   ReaderScreenData get screenData => ReaderScreenData(
     settings: settings,
     paragraphs: getCurrentChapterContent(),
@@ -35,11 +39,21 @@ class ReaderProvider extends ChangeNotifier {
     currentSearchIndex: _currentSearchIndex,
   );
 
-  ReaderProvider({ReaderRepository? readerRepository})
+  MenuData get menuData => MenuData(
+    currentChapterIndex: _currentChapterIndex,
+    chaptersLength: _chapters.length,
+    fontSize: settings.fontSize,
+    lineHeight: settings.lineHeight,
+    fontFamily: settings.fontFamily,
+    themeIndex: settings.themeIndex,
+  );
+
+  ReaderViewModel({ReaderRepository? readerRepository})
     : _readerRepository = readerRepository ?? ReaderRepository();
 
   void setIsLoading(bool value) {
     _isLoading = value;
+    notifyListeners();
   }
 
   String get content => _content;
@@ -53,7 +67,7 @@ class ReaderProvider extends ChangeNotifier {
   double get scrollProgress => _scrollProgress;
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
-  ReadingSettings get settings => _settingsService.settings;
+  ReadingSettings get settings => _readerRepository.getSettings();
   String? get novelId => _novelId;
   String get searchQuery => _searchQuery;
   List<SearchResult> get searchResults => _searchResults;
@@ -89,32 +103,106 @@ class ReaderProvider extends ChangeNotifier {
       }
 
       await _readerRepository.updateLastReadTime(novelId);
+
+      // 预加载当前章节和相邻章节
+      _preloadAdjacentChapters();
     } catch (e) {
-      debugPrint('Error loading novel: $e');
+      // 加载失败静默处理
     }
 
     _isLoading = false;
-    debugPrint('Chapters loaded: ${_chapters.length}');
     notifyListeners();
   }
 
   List<String> getCurrentChapterContent() {
-    if (currentChapter == null) return [];
-    final chapterTitle = currentChapter!.title;
+    return getChapterContent(_currentChapterIndex);
+  }
 
-    // 添加边界检查，防止越界
-    final start = currentChapter!.startPosition;
-    final end = currentChapter!.endPosition;
+  void goToChapter(int index) {
+    if (index >= 0 && index < _chapters.length) {
+      _currentChapterIndex = index;
+      _scrollProgress = 0.0;
+      _saveProgress();
+      notifyListeners();
+      // 章节切换后触发预加载
+      _preloadAdjacentChapters();
+    }
+  }
 
-    if (start < 0 || end > _content.length || start >= end) {
-      return [];
+  /// 预加载相邻章节内容
+  void _preloadAdjacentChapters() {
+    if (_novelId == null || _chapters.isEmpty) return;
+
+    final prevIndex = _currentChapterIndex - 1;
+    final nextIndex = _currentChapterIndex + 1;
+
+    // 预加载上一章（不等待，避免阻塞）
+    if (prevIndex >= 0 && !_chapterContentCache.containsKey(prevIndex)) {
+      _preloadChapter(prevIndex);
     }
 
+    // 预加载下一章（不等待，避免阻塞）
+    if (nextIndex < _chapters.length && !_chapterContentCache.containsKey(nextIndex)) {
+      _preloadChapter(nextIndex);
+    }
+
+    // 清理过期的缓存，只保留当前章节附近的缓存
+    _cleanupOldCache();
+  }
+
+  /// 在后台加载指定章节内容
+  Future<void> _preloadChapter(int index) async {
+    if (index < 0 || index >= _chapters.length) return;
+
+    // 使用 microtask 避免阻塞 UI
+    await Future.microtask(() {
+      if (!_chapterContentCache.containsKey(index)) {
+        _chapterContentCache[index] = _computeChapterContent(index);
+      }
+    });
+  }
+
+  /// 清理过期的章节缓存，只保留当前章节附近的内容
+  void _cleanupOldCache() {
+    final keysToRemove = <int>[];
+    for (final key in _chapterContentCache.keys) {
+      if ((key - _currentChapterIndex).abs() > _maxPreloadChapters) {
+        keysToRemove.add(key);
+      }
+    }
+    for (final key in keysToRemove) {
+      _chapterContentCache.remove(key);
+    }
+  }
+
+  /// 获取章节内容，优先从缓存读取
+  List<String> getChapterContent(int index) {
+    if (index < 0 || index >= _chapters.length) return [];
+
+    // 优先从缓存读取
+    if (_chapterContentCache.containsKey(index)) {
+      return _chapterContentCache[index]!;
+    }
+
+    // 缓存未命中，实时计算
+    return _computeChapterContent(index);
+  }
+
+  /// 计算指定章节的内容
+  List<String> _computeChapterContent(int index) {
+    if (index < 0 || index >= _chapters.length) return [];
+
+    final chapter = _chapters[index];
+    final start = chapter.startPosition;
+    final end = chapter.endPosition;
+
+    if (start < 0 || end > _content.length || start >= end) return [];
+
     final fullContent = _content.substring(start, end);
+    final chapterTitle = chapter.title;
 
     if (fullContent.startsWith(chapterTitle)) {
       var contentWithoutTitle = fullContent.substring(chapterTitle.length);
-      // 只删除标题后的换行符，保留正文开头的空格缩进
       if (contentWithoutTitle.startsWith('\n')) {
         contentWithoutTitle = contentWithoutTitle.substring(1);
       } else if (contentWithoutTitle.startsWith('\r\n')) {
@@ -126,15 +214,6 @@ class ReaderProvider extends ChangeNotifier {
           .toList();
     }
     return fullContent.split('\n').where((p) => p.trim().isNotEmpty).toList();
-  }
-
-  void goToChapter(int index) {
-    if (index >= 0 && index < _chapters.length) {
-      _currentChapterIndex = index;
-      _scrollProgress = 0.0;
-      _saveProgress();
-      notifyListeners();
-    }
   }
 
   void previousChapter() {
@@ -178,27 +257,27 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   Future<void> setFontSize(double size) async {
-    await _settingsService.setFontSize(size);
+    await _readerRepository.setFontSize(size);
     notifyListeners();
   }
 
   Future<void> setLineHeight(double height) async {
-    await _settingsService.setLineHeight(height);
+    await _readerRepository.setLineHeight(height);
     notifyListeners();
   }
 
   Future<void> setFontFamily(String fontFamily) async {
-    await _settingsService.setFontFamily(fontFamily);
+    await _readerRepository.setFontFamily(fontFamily);
     notifyListeners();
   }
 
   Future<void> setTheme(int index) async {
-    await _settingsService.setTheme(index);
+    await _readerRepository.setTheme(index);
     notifyListeners();
   }
 
   Future<void> setUsePageMode(bool value) async {
-    await _settingsService.setUsePageMode(value);
+    await _readerRepository.setUsePageMode(value);
     notifyListeners();
   }
 

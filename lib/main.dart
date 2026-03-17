@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:novel_reader/services/bookmarks_service.dart';
+import 'package:novel_reader/providers/settings_view_model.dart';
 import 'package:provider/provider.dart';
 import 'constants/global.dart';
-import 'providers/bookshelf_provider.dart';
-import 'providers/reader_provider.dart';
-import 'services/settings_service.dart';
+import 'providers/bookshelf_view_model.dart';
+import 'providers/reader_view_model.dart';
+import 'services/app_initializer.dart';
 import 'services/file_service.dart';
 import 'screens/bookshelf_screen.dart';
 import 'utils/color_utils.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SettingsService().init();
-  await BookmarksService().init();
+  await AppInitializer.init();
   runApp(const NovelReaderApp());
 }
 
@@ -30,7 +28,10 @@ class _NovelReaderAppState extends State<NovelReaderApp>
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: [SystemUiOverlay.top]);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top],
+    );
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -48,7 +49,6 @@ class _NovelReaderAppState extends State<NovelReaderApp>
       FileService().clearCacheIfTooLarge(
         Global.defaultCacheLimitBytes,
       ); // 50MB限制
-      debugPrint('应用进入后台，清理缓存');
     }
   }
 
@@ -56,13 +56,13 @@ class _NovelReaderAppState extends State<NovelReaderApp>
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<SettingsService>.value(value: SettingsService()),
-        ChangeNotifierProvider(create: (_) => BookshelfProvider()),
-        ChangeNotifierProvider(create: (_) => ReaderProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
+        ChangeNotifierProvider(create: (_) => BookshelfViewModel()),
+        ChangeNotifierProvider(create: (_) => ReaderViewModel()),
       ],
       child: Builder(
         builder: (context) {
-          final settings = context.watch<SettingsService>().settings;
+          final settings = context.watch<SettingsViewModel>().settings;
           final backgroundColor = ColorUtils.parseColor(
             settings.backgroundColor,
           );
@@ -70,7 +70,7 @@ class _NovelReaderAppState extends State<NovelReaderApp>
           final brightness = ColorUtils.getBrightness(backgroundColor);
 
           return MaterialApp(
-            title: 'Novel Reader',
+            title: '墨读',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               scaffoldBackgroundColor: Colors.white,
@@ -87,12 +87,6 @@ class _NovelReaderAppState extends State<NovelReaderApp>
               appBarTheme: AppBarTheme(
                 backgroundColor: Global.menuBackgroundColor,
                 foregroundColor: Global.menuTextColor,
-                // systemOverlayStyle: SystemUiOverlayStyle(
-                //   statusBarColor: backgroundColor,
-                //   statusBarIconBrightness: brightness == Brightness.dark
-                //       ? Brightness.dark
-                //       : Brightness.light,
-                // ),
               ),
               colorScheme: ColorScheme.fromSeed(
                 seedColor: textColor,

@@ -16,7 +16,8 @@ class ChapterNavigation extends StatelessWidget {
     required this.settings,
   });
 
-  Widget buildSliver() {
+  @override
+  Widget build(BuildContext context) {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       sliver: SliverToBoxAdapter(
@@ -96,10 +97,5 @@ class ChapterNavigation extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return buildSliver();
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/chapter.dart';
 import '../services/settings_service.dart';
-import '../providers/reader_provider.dart';
 
 class ReaderScreenData {
   final ReadingSettings settings;
@@ -43,19 +42,6 @@ class ReaderScreenData {
       searchQuery: searchQuery ?? this.searchQuery,
       searchResults: searchResults ?? this.searchResults,
       currentSearchIndex: currentSearchIndex ?? this.currentSearchIndex,
-    );
-  }
-
-  factory ReaderScreenData.fromProvider(ReaderProvider provider) {
-    return ReaderScreenData(
-      settings: provider.settings,
-      paragraphs: provider.getCurrentChapterContent(),
-      isLoading: provider.isLoading,
-      currentChapterIndex: provider.currentChapterIndex,
-      chapters: provider.chapters,
-      searchQuery: provider.searchQuery,
-      searchResults: provider.searchResults,
-      currentSearchIndex: provider.currentSearchIndex,
     );
   }
 

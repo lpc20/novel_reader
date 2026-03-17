@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:novel_reader/constants/global.dart';
 import 'package:provider/provider.dart';
-import '../providers/bookshelf_provider.dart';
+import '../providers/bookshelf_view_model.dart';
 import '../models/novel.dart';
 import '../screens/reader_screen.dart';
 import '../utils/permission_helper.dart';
@@ -21,7 +21,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BookshelfProvider>().init();
+      context.read<BookshelfViewModel>().init();
     });
   }
 
@@ -42,7 +42,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
 
   Future<void> _pickFile() async {
     try {
-      final provider = context.read<BookshelfProvider>();
+      final provider = context.read<BookshelfViewModel>();
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['txt'],
@@ -101,12 +101,12 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await context.read<BookshelfProvider>().removeNovel(novel.id);
+      await context.read<BookshelfViewModel>().removeNovel(novel.id);
     }
   }
 
   void _showSortOptions() {
-    final currentSortType = context.read<BookshelfProvider>().currentSortType;
+    final currentSortType = context.read<BookshelfViewModel>().currentSortType;
 
     showModalBottomSheet(
       context: context,
@@ -135,7 +135,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 : null,
             onTap: () {
               Navigator.pop(context);
-              context.read<BookshelfProvider>().setSortType(SortType.byAddTime);
+              context.read<BookshelfViewModel>().setSortType(
+                SortType.byAddTime,
+              );
             },
           ),
           ListTile(
@@ -146,7 +148,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 : null,
             onTap: () {
               Navigator.pop(context);
-              context.read<BookshelfProvider>().setSortType(SortType.byTitle);
+              context.read<BookshelfViewModel>().setSortType(SortType.byTitle);
             },
           ),
           ListTile(
@@ -157,7 +159,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 : null,
             onTap: () {
               Navigator.pop(context);
-              context.read<BookshelfProvider>().setSortType(
+              context.read<BookshelfViewModel>().setSortType(
                 SortType.byFileSize,
               );
             },
@@ -170,7 +172,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 : null,
             onTap: () {
               Navigator.pop(context);
-              context.read<BookshelfProvider>().setSortType(
+              context.read<BookshelfViewModel>().setSortType(
                 SortType.byLastRead,
               );
             },
@@ -201,7 +203,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           ),
         ],
       ),
-      body: Consumer<BookshelfProvider>(
+      body: Consumer<BookshelfViewModel>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());

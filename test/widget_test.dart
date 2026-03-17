@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:novel_reader/providers/bookshelf_view_model.dart';
+import 'package:novel_reader/providers/reader_view_model.dart';
 import 'package:provider/provider.dart';
-import 'package:novel_reader/providers/bookshelf_provider.dart';
-import 'package:novel_reader/providers/reader_provider.dart';
 import 'package:novel_reader/screens/bookshelf_screen.dart';
 
 void main() {
@@ -10,8 +10,8 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => BookshelfProvider()),
-          ChangeNotifierProvider(create: (_) => ReaderProvider()),
+          ChangeNotifierProvider(create: (_) => BookshelfViewModel()),
+          ChangeNotifierProvider(create: (_) => ReaderViewModel()),
         ],
         child: const MaterialApp(
           home: BookshelfScreen(),

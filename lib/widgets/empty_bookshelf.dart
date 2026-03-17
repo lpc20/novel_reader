@@ -48,7 +48,7 @@ class EmptyBookshelf extends StatelessWidget {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('导入小说'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Global.menuHighlightColor,
+              backgroundColor: Global.menuBackgroundColor,
               foregroundColor: Global.menuTextColor,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),

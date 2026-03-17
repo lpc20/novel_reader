@@ -1,5 +1,3 @@
-import '../providers/reader_provider.dart';
-
 class MenuData {
   final int currentChapterIndex;
   final int chaptersLength;
@@ -16,17 +14,6 @@ class MenuData {
     required this.fontFamily,
     required this.themeIndex,
   });
-
-  factory MenuData.fromProvider(ReaderProvider provider) {
-    return MenuData(
-      currentChapterIndex: provider.currentChapterIndex,
-      chaptersLength: provider.chapters.length,
-      fontSize: provider.settings.fontSize,
-      lineHeight: provider.settings.lineHeight,
-      fontFamily: provider.settings.fontFamily,
-      themeIndex: provider.settings.themeIndex,
-    );
-  }
 
   @override
   bool operator ==(Object other) {

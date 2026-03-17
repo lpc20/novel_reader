@@ -166,12 +166,13 @@ class SettingsPanel extends StatelessWidget {
 
   Widget _buildModeToggle() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         const Text(
           '翻页模式',
           style: TextStyle(fontSize: 12, color: Global.menuTextColor),
         ),
+        const SizedBox(width:8),
         Switch(
           value: usePageMode,
           activeThumbColor: Global.menuHighlightColor,

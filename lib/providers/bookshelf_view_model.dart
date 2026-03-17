@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/novel.dart';
 import '../models/reading_progress.dart';
-import '../services/bookshelf_service.dart';
-import '../services/file_service.dart';
+import '../services/bookshelf_repository.dart';
 
 enum SortType { byAddTime, byTitle, byFileSize, byLastRead }
 
-class BookshelfProvider extends ChangeNotifier {
-  final BookshelfService _bookshelfService = BookshelfService();
-  final FileService _fileService = FileService();
+class BookshelfViewModel extends ChangeNotifier {
+  final BookshelfRepository _repository;
+
+  BookshelfViewModel({BookshelfRepository? repository})
+      : _repository = repository ?? BookshelfRepository();
 
   List<Novel> get novels => _sortedNovels;
   bool _isLoading = false;
@@ -20,7 +21,7 @@ class BookshelfProvider extends ChangeNotifier {
   SortType get currentSortType => _currentSortType;
 
   List<Novel> get _sortedNovels {
-    final novels = _bookshelfService.novels;
+    final novels = _repository.novels;
     switch (_currentSortType) {
       case SortType.byAddTime:
         return List.from(novels); // 保持原始顺序（添加时间）
@@ -41,14 +42,7 @@ class BookshelfProvider extends ChangeNotifier {
   Future<void> init() async {
     _isLoading = true;
     notifyListeners();
-
-    try {
-      await _bookshelfService.init();
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-    }
-
+    _error = null;
     _isLoading = false;
     notifyListeners();
   }
@@ -59,19 +53,7 @@ class BookshelfProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final novel = await _fileService.importNovel(filePath);
-      final content = await _fileService.readFileContent(
-        novel.filePath,
-        novel.encoding,
-      );
-      final chapters = await _fileService.parseChapters(
-        content,
-        cacheKey: novel.id,
-      );
-
-      final updatedNovel = novel.copyWith(totalChapters: chapters.length);
-      await _bookshelfService.addNovel(updatedNovel);
-
+      await _repository.importAndPersistNovel(filePath);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -84,25 +66,25 @@ class BookshelfProvider extends ChangeNotifier {
   }
 
   Future<void> removeNovel(String novelId) async {
-    await _bookshelfService.removeNovel(novelId);
+    await _repository.removeNovel(novelId);
     notifyListeners();
   }
 
   Future<void> updateLastReadTime(String novelId) async {
-    await _bookshelfService.updateLastReadTime(novelId);
+    await _repository.updateLastReadTime(novelId);
     notifyListeners();
   }
 
   Novel? getNovel(String novelId) {
-    return _bookshelfService.getNovel(novelId);
+    return _repository.getNovel(novelId);
   }
 
   ReadingProgress? getProgress(String novelId) {
-    return _bookshelfService.getProgress(novelId);
+    return _repository.getProgress(novelId);
   }
 
   Future<void> saveProgress(ReadingProgress progress) async {
-    await _bookshelfService.saveProgress(progress);
+    await _repository.saveProgress(progress);
   }
 
   void setSortType(SortType type) {
