@@ -72,31 +72,33 @@ class SettingsPanel extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: Global.buttonTextColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: DropdownButton<String>(
-              value: fontFamily,
-              isExpanded: true,
-              dropdownColor: Global.buttonTextColor,
-              underline: const SizedBox(),
-              style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
-              items: Global.fontFamilies.map((font) {
-                return DropdownMenuItem(
-                  value: font,
-                  child: Text(
-                    Global.fontFamilyNames[font]!,
-                    style: TextStyle(fontSize: 12, fontFamily: font),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  onFontFamilyChange(value);
-                }
-              },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: DropdownButton<String>(
+                value: fontFamily,
+                isExpanded: true,
+                dropdownColor: Global.buttonTextColor,
+                underline: const SizedBox(),
+                style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
+                items: Global.fontFamilies.map((font) {
+                  return DropdownMenuItem(
+                    value: font,
+                    child: Text(
+                      Global.fontFamilyNames[font] ?? font,
+                      style: TextStyle(fontSize: 12, fontFamily: font),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    onFontFamilyChange(value);
+                  }
+                },
+              ),
             ),
           ),
         ),
@@ -137,14 +139,16 @@ class SettingsPanel extends StatelessWidget {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: ColorUtils.parseColor(theme['bg']!),
+                          color: ColorUtils.parseColor(
+                            theme['bg'] ?? '#F5F5DC',
+                          ),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          theme['name']!,
+                          theme['name'] ?? '未知主题',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -172,11 +176,19 @@ class SettingsPanel extends StatelessWidget {
           '翻页模式',
           style: TextStyle(fontSize: 12, color: Global.menuTextColor),
         ),
-        const SizedBox(width:8),
-        Switch(
-          value: usePageMode,
-          activeThumbColor: Global.menuHighlightColor,
-          onChanged: onUsePageModeChange,
+        const SizedBox(width: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: Switch(
+            value: usePageMode,
+            activeThumbColor: Colors.white,
+            trackColor: WidgetStateColor.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? Global.menuHighlightColor
+                  : Global.menuTextColor,
+            ),
+            onChanged: onUsePageModeChange,
+          ),
         ),
       ],
     );

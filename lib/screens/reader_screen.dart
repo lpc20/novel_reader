@@ -25,7 +25,6 @@ class _ReaderScreenState extends State<ReaderScreen>
   bool _showDrawer = false;
   bool _showMenu = false;
   late final ScrollController _scrollController;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _menuAnimationController;
   late Animation<Offset> _menuAnimation;
@@ -83,25 +82,24 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _loadNovel() async {
-    final readerProvider = context.read<ReaderViewModel>();
-    readerProvider.setIsLoading(true);
-    await readerProvider.loadNovel(
+    final vm = context.read<ReaderViewModel>();
+    await vm.loadNovel(
       widget.novel.id,
       widget.novel.filePath,
       widget.novel.encoding,
     );
     // 延迟滚动到上次阅读位置，等待布局完成
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final scrollProgress = readerProvider.scrollProgress;
-        if (scrollProgress > 0 && _scrollController.hasClients) {
+      if (mounted && !vm.usePageMode) {
+        final progressInChapter = vm.progressInChapter;
+        if (progressInChapter > 0 && _scrollController.hasClients) {
           // 在下一帧中滚动，确保布局已完成
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _scrollController.hasClients) {
               final maxScrollExtent =
                   _scrollController.position.maxScrollExtent;
               if (maxScrollExtent > 0) {
-                final targetPosition = maxScrollExtent * scrollProgress;
+                final targetPosition = maxScrollExtent * progressInChapter;
                 _scrollController.jumpTo(targetPosition);
               }
             }
@@ -122,8 +120,10 @@ class _ReaderScreenState extends State<ReaderScreen>
         final position = _scrollController.position;
         final maxScrollExtent = position.maxScrollExtent;
         if (maxScrollExtent > 0) {
-          final scrollProgress = position.pixels / maxScrollExtent;
-          context.read<ReaderViewModel>().updateScrollProgress(scrollProgress);
+          final progressInChapter = position.pixels / maxScrollExtent;
+          context.read<ReaderViewModel>().updateProgressInChapter(
+            progressInChapter,
+          );
         }
       }
     }
@@ -173,9 +173,9 @@ class _ReaderScreenState extends State<ReaderScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final vm = context.read<ReaderViewModel>();
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: ColorUtils.parseColor(
         context.select<ReaderViewModel, String>(
           (p) => p.settings.backgroundColor,
@@ -186,16 +186,34 @@ class _ReaderScreenState extends State<ReaderScreen>
         child: Stack(
           children: [
             // 主内容区域：根据阅读模式选择滚动或翻页
-            context.select<ReaderViewModel, bool>((p) => p.settings.usePageMode)
+            vm.settings.usePageMode
                 ? _buildMainContentWithPaginator()
-                : Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: _buildMainContentWithScrollView(),
-                  ),
+                : _buildMainContentWithScrollView(),
             // 章节抽屉
             _buildChapterDrawer(screenWidth),
             // 阅读器菜单
             _buildReaderMenu(screenWidth),
+            !_showMenu?Positioned(
+              top: 35,
+              left: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
+                ),
+                child: RichText(
+                  text: TextSpan(
+                    text: vm.currentChapter!=null?vm.currentChapter!.title:'',
+                    style: TextStyle(
+                      fontSize: vm.settings.fontSize-6,
+                      color: Global.menuTextColor,
+                      height: 1.3,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ):const SizedBox(),
           ],
         ),
       ),
@@ -210,17 +228,21 @@ class _ReaderScreenState extends State<ReaderScreen>
     if (data.isLoading) {
       return progressIndicator;
     }
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        ..._buildReaderContentSlivers(data),
-        ChapterNavigation(
-          currentChapterIndex: data.currentChapterIndex,
-          chaptersLength: data.chapters.length,
-          onChapterChange: _onChapterSelected,
-          settings: data.settings,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 48.0),
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: _showMenu ? NeverScrollableScrollPhysics() : null,
+        slivers: [
+          ..._buildReaderContentSlivers(data),
+          ChapterNavigation(
+            currentChapterIndex: data.currentChapterIndex,
+            chaptersLength: data.chapters.length,
+            onChapterChange: _onChapterSelected,
+            settings: data.settings,
+          ),
+        ],
+      ),
     );
   }
 
@@ -242,9 +264,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                     color: ColorUtils.parseColor(data.settings.textColor),
                     height: 1.3,
                     letterSpacing: 1.0,
-                    fontFamily: data.settings.fontFamily == 'system'
-                        ? 'OPPOSans'
-                        : data.settings.fontFamily,
+                    fontFamily: data.settings.fontFamily,
                   ),
                   textAlign: TextAlign.left,
                   maxLines: 2,
@@ -288,9 +308,7 @@ class _ReaderScreenState extends State<ReaderScreen>
       color: ColorUtils.parseColor(data.settings.textColor),
       height: data.settings.lineHeight,
       fontWeight: FontWeight.normal,
-      fontFamily: data.settings.fontFamily == 'system'
-          ? 'OPPOSans'
-          : data.settings.fontFamily,
+      fontFamily: data.settings.fontFamily,
     );
 
     if (data.searchResults.isEmpty || data.currentSearchIndex < 0) {
@@ -349,22 +367,22 @@ class _ReaderScreenState extends State<ReaderScreen>
       return progressIndicator;
     }
 
+    final vm = context.read<ReaderViewModel>();
     return Padding(
-      padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
+      padding: const EdgeInsets.only(top: 48.0, bottom: 10.0),
       child: TextPaginator(
         paragraphs: data.paragraphs,
         chapterTitle: data.chapters[data.currentChapterIndex].title,
         style: TextStyle(
           fontSize: data.settings.fontSize,
           height: data.settings.lineHeight,
-          fontFamily: data.settings.fontFamily == 'system'
-              ? 'OPPOSans'
-              : data.settings.fontFamily,
+          fontFamily: data.settings.fontFamily,
           color: ColorUtils.parseColor(data.settings.textColor),
         ),
-        onNextChapter: () => context.read<ReaderViewModel>().nextChapter(),
-        onPreviousChapter: () =>
-            context.read<ReaderViewModel>().previousChapter(),
+        onNextChapter: () => vm.nextChapter(),
+        onPreviousChapter: () => vm.previousChapter(),
+        initialProgress: vm.progressInChapter,
+        enablePaging: !_showMenu,
       ),
     );
   }

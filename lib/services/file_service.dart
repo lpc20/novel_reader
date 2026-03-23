@@ -6,25 +6,43 @@ import 'package:charset_converter/charset_converter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/novel.dart';
 import '../models/chapter.dart';
+import '../utils/cache_manager.dart';
+import '../constants/global.dart';
 
+/// 文件服务类，处理文件操作、编码检测和章节解析
 class FileService {
   static final FileService _instance = FileService._internal();
   factory FileService() => _instance;
-  FileService._internal();
 
-  // 预编译正则表达式
+  // 预编译正则表达式，用于章节检测
   static final List<RegExp> _chapterPatterns = [
     RegExp(r'^第[零一二三四五六七八九十百千万\d]+[章节回集卷部篇][\s\S]*?$', multiLine: true),
     RegExp(r'^[零一二三四五六七八九十百千万\d]+[、.][\s\S]*?$', multiLine: true),
     RegExp(r'^Chapter\s*\d+.*$', multiLine: true, caseSensitive: false),
   ];
 
-  // 章节列表缓存
-  final Map<String, List<Chapter>> _chapterCache = {};
+  // 缓存管理器
+  final CacheManager _cacheManager = CacheManager();
 
-  // 文件内容缓存
-  final Map<String, String> _contentCache = {};
+  FileService._internal() {
+    // 注册缓存区域
+    _cacheManager.registerRegion(
+      CacheRegionConfig(
+        name: Global.CHAPTER_CACHE_REGION,
+        maxSizeBytes: Global.CHAPTER_CACHE_SIZE,
+        defaultExpiry: Global.CHAPTER_CACHE_EXPIRY,
+      ),
+    );
+    _cacheManager.registerRegion(
+      CacheRegionConfig(
+        name: Global.CONTENT_CACHE_REGION,
+        maxSizeBytes: Global.CONTENT_CACHE_SIZE,
+        defaultExpiry: Global.CONTENT_CACHE_EXPIRY,
+      ),
+    );
+  }
 
+  /// 检测文件编码
   Future<String> detectEncoding(String filePath) async {
     final file = File(filePath);
     final length = await file.length();
@@ -35,6 +53,7 @@ class FileService {
 
     if (bytes.length < 3) return 'UTF-8';
 
+    // 检查BOM标记
     if (bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
       return 'UTF-8';
     }
@@ -45,6 +64,7 @@ class FileService {
       return 'UTF-16BE';
     }
 
+    // 尝试UTF-8解码
     if (_isValidUtf8(bytes)) {
       try {
         utf8.decode(bytes);
@@ -54,30 +74,22 @@ class FileService {
       }
     }
 
-    try {
-      await CharsetConverter.decode('gbk', bytes);
-      return 'GBK';
-    } catch (_) {
-      // GBK 解码失败，继续尝试其他编码
+    // 尝试其他编码
+    final encodings = ['GBK', 'GB18030', 'BIG5'];
+    for (final encoding in encodings) {
+      try {
+        await CharsetConverter.decode(encoding.toLowerCase(), bytes);
+        return encoding;
+      } catch (_) {
+        // 编码解码失败，继续尝试下一个
+      }
     }
 
-    try {
-      await CharsetConverter.decode('gb18030', bytes);
-      return 'GB18030';
-    } catch (_) {
-      // GB18030 解码失败，继续尝试其他编码
-    }
-
-    try {
-      await CharsetConverter.decode('big5', bytes);
-      return 'BIG5';
-    } catch (_) {
-      // BIG5 解码失败，使用默认编码
-    }
-
+    // 默认返回UTF-8
     return 'UTF-8';
   }
 
+  /// 验证UTF-8编码是否有效
   bool _isValidUtf8(Uint8List bytes) {
     int i = 0;
     while (i < bytes.length) {
@@ -98,7 +110,6 @@ class FileService {
         if ((bytes[i + 1] & 0xC0) != 0x80 || (bytes[i + 2] & 0xC0) != 0x80) {
           return false;
         }
-        // Optional: check valid Unicode range (e.g., no surrogates)
         i += 3;
       } else if ((byte & 0xF8) == 0xF0) {
         // 4-byte sequence
@@ -116,69 +127,77 @@ class FileService {
     return true;
   }
 
+  /// 读取文件内容
   Future<String> readFileContent(String filePath, String encoding) async {
     final cacheKey = '$filePath:$encoding';
 
-    if (_contentCache.containsKey(cacheKey)) {
-      return _contentCache[cacheKey]!;
+    // 检查缓存
+    final cachedContent = _cacheManager.get<String>(
+      Global.CONTENT_CACHE_REGION,
+      cacheKey,
+    );
+    if (cachedContent != null) {
+      return cachedContent;
     }
 
     final file = File(filePath);
     final bytes = await file.readAsBytes();
 
     String content;
-    if (encoding.toUpperCase() == 'UTF-8') {
-      content = utf8.decode(bytes);
-    } else if (encoding.toUpperCase() == 'GBK') {
-      try {
-        content = await CharsetConverter.decode('gbk', bytes);
-      } catch (e) {
-        content = 'GBK解码失败,小说txt已损坏';
+    try {
+      switch (encoding.toUpperCase()) {
+        case 'UTF-8':
+          content = utf8.decode(bytes);
+          break;
+        case 'GBK':
+          content = await CharsetConverter.decode('gbk', bytes);
+          break;
+        case 'GB18030':
+          content = await CharsetConverter.decode('gb18030', bytes);
+          break;
+        case 'BIG5':
+          content = await CharsetConverter.decode('big5', bytes);
+          break;
+        case 'UTF-16LE':
+        case 'UTF-16BE':
+          content = String.fromCharCodes(bytes);
+          break;
+        default:
+          content = utf8.decode(bytes);
       }
-    } else if (encoding.toUpperCase() == 'GB18030') {
-      try {
-        content = await CharsetConverter.decode('gb18030', bytes);
-      } catch (e) {
-        content = 'GB18030解码失败,小说txt已损坏';
-      }
-    } else if (encoding.toUpperCase() == 'BIG5') {
-      try {
-        content = await CharsetConverter.decode('big5', bytes);
-      } catch (e) {
-        content = 'BIG5解码失败,小说txt已损坏';
-      }
-    } else if (encoding.toUpperCase() == 'UTF-16LE') {
-      content = String.fromCharCodes(bytes);
-    } else if (encoding.toUpperCase() == 'UTF-16BE') {
-      content = String.fromCharCodes(bytes);
-    } else {
-      content = utf8.decode(bytes);
+    } catch (e) {
+      content = '$encoding解码失败,小说txt已损坏';
     }
 
-    _contentCache[cacheKey] = content;
+    // 缓存内容
+    _cacheManager.put(Global.CONTENT_CACHE_REGION, cacheKey, content);
     return content;
   }
 
-  // 章节解析函数（用于 isolate）
+  /// 章节解析函数（用于 isolate）
   static List<Chapter> _parseChaptersInIsolate(String content) {
     final chapters = <Chapter>[];
 
+    // 收集所有章节匹配
     List<RegExpMatch> allMatches = [];
     for (var pattern in _chapterPatterns) {
       allMatches.addAll(pattern.allMatches(content));
     }
 
+    // 按位置排序
     allMatches.sort((a, b) => a.start.compareTo(b.start));
 
     if (allMatches.isEmpty) {
-      int chapterLength = 3000;
-      int totalLength = content.length;
-      int chapterCount = (totalLength / chapterLength).ceil();
+      // 没有找到章节，按固定长度分割
+      const chapterLength = 3000;
+      final totalLength = content.length;
+      final chapterCount = (totalLength / chapterLength).ceil();
 
       for (int i = 0; i < chapterCount; i++) {
-        int start = i * chapterLength;
-        int end = (i + 1) * chapterLength;
-        if (end > totalLength) end = totalLength;
+        final start = i * chapterLength;
+        final end = (i + 1) * chapterLength > totalLength
+            ? totalLength
+            : (i + 1) * chapterLength;
 
         chapters.add(
           Chapter(
@@ -192,6 +211,7 @@ class FileService {
     } else {
       int index = 0;
 
+      // 添加前言部分
       if (allMatches.first.start > 0) {
         chapters.add(
           Chapter(
@@ -204,10 +224,11 @@ class FileService {
         index++;
       }
 
+      // 添加章节
       for (int i = 0; i < allMatches.length; i++) {
         final match = allMatches[i];
-        int start = match.start;
-        int end = (i + 1 < allMatches.length)
+        final start = match.start;
+        final end = (i + 1 < allMatches.length)
             ? allMatches[i + 1].start
             : content.length;
 
@@ -230,14 +251,20 @@ class FileService {
     return chapters;
   }
 
-  // 解析章节（带缓存和 isolate 优化）
+  /// 解析章节（带缓存和 isolate 优化）
   Future<List<Chapter>> parseChapters(
     String content, {
     String? cacheKey,
   }) async {
     // 检查缓存
-    if (cacheKey != null && _chapterCache.containsKey(cacheKey)) {
-      return _chapterCache[cacheKey]!;
+    if (cacheKey != null) {
+      final cachedChapters = _cacheManager.get<List<Chapter>>(
+        Global.CHAPTER_CACHE_REGION,
+        cacheKey,
+      );
+      if (cachedChapters != null) {
+        return cachedChapters;
+      }
     }
 
     // 使用 isolate 解析章节
@@ -245,12 +272,13 @@ class FileService {
 
     // 缓存结果
     if (cacheKey != null) {
-      _chapterCache[cacheKey] = chapters;
+      _cacheManager.put(Global.CHAPTER_CACHE_REGION, cacheKey, chapters);
     }
 
     return chapters;
   }
 
+  /// 导入小说
   Future<Novel> importNovel(String filePath) async {
     final file = File(filePath);
     final fileName = filePath.split(Platform.pathSeparator).last;
@@ -261,6 +289,7 @@ class FileService {
     final fileSize = await file.length();
     final encoding = await detectEncoding(filePath);
 
+    // 随机生成封面颜色
     final colors = [
       '#4A90D9',
       '#E74C3C',
@@ -272,17 +301,21 @@ class FileService {
     ];
     final coverColor = colors[Random().nextInt(colors.length)];
 
+    // 创建小说目录
     final appDirectory = await getAppDirectory();
     final novelsDirectory = Directory('$appDirectory/novels');
     if (!await novelsDirectory.exists()) {
       await novelsDirectory.create(recursive: true);
     }
 
+    // 生成唯一ID和目标路径
     final novelId = DateTime.now().millisecondsSinceEpoch.toString();
     final targetFilePath = '${novelsDirectory.path}/$novelId.txt';
 
+    // 复制文件
     await file.copy(targetFilePath);
 
+    // 创建小说对象
     return Novel(
       id: novelId,
       title: title,
@@ -294,40 +327,30 @@ class FileService {
     );
   }
 
+  /// 获取应用目录
   Future<String> getAppDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
 
-  // 清理缓存
+  /// 清理缓存
   void clearCache() {
-    _chapterCache.clear();
-    _contentCache.clear();
+    _cacheManager.clearRegion(Global.CHAPTER_CACHE_REGION);
+    _cacheManager.clearRegion(Global.CONTENT_CACHE_REGION);
   }
 
-  // 清理指定小说的缓存
+  /// 清理指定小说的缓存
   void clearNovelCache(String novelId) {
-    // 清理章节缓存
-    _chapterCache.remove(novelId);
-    // 清理内容缓存（通过匹配novelId）
-    _contentCache.removeWhere((key, value) => key.contains(novelId));
+    _cacheManager.clearNovelCache(novelId);
   }
 
-  // 获取缓存大小
+  /// 获取缓存大小（字节）
   int getCacheSize() {
-    int size = 0;
-    // 计算章节缓存大小
-    for (var chapters in _chapterCache.values) {
-      size += chapters.length * 100; // 估算每个章节对象大小
-    }
-    // 计算内容缓存大小
-    for (var content in _contentCache.values) {
-      size += content.length * 2; // 估算每个字符2字节
-    }
-    return size;
+    return _cacheManager.getRegionSize(Global.CHAPTER_CACHE_REGION) +
+        _cacheManager.getRegionSize(Global.CONTENT_CACHE_REGION);
   }
 
-  // 清理超过指定大小的缓存
+  /// 清理超过指定大小的缓存
   void clearCacheIfTooLarge(int maxSizeBytes) {
     final currentSize = getCacheSize();
     if (currentSize > maxSizeBytes) {

@@ -51,9 +51,5 @@ class BookshelfRepository {
   Future<void> saveProgress(ReadingProgress progress) {
     return _bookshelfService.saveProgress(progress);
   }
-
-  List<Novel> getRecentNovels({int limit = 10}) {
-    return _bookshelfService.getRecentNovels(limit: limit);
-  }
 }
 

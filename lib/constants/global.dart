@@ -5,6 +5,24 @@ class Global {
   static const int scrollThrottleDelay = 300;
   //默认Cache大小
   static const int defaultCacheLimitBytes = 50 * 1024 * 1024;
+
+  // 缓存区域配置
+  static const String CHAPTER_CACHE_REGION = 'chapter_cache';
+  static const String CONTENT_CACHE_REGION = 'content_cache';
+  static const String CHAPTER_CONTENT_CACHE_REGION = 'chapter_content_cache';
+  static const String COLOR_CACHE_REGION = 'color_cache';
+
+  // 缓存大小配置
+  static const int CHAPTER_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
+  static const int CONTENT_CACHE_SIZE = 30 * 1024 * 1024; // 30MB
+  static const int CHAPTER_CONTENT_CACHE_SIZE = 20 * 1024 * 1024; // 20MB
+  static const int COLOR_CACHE_SIZE = 1 * 1024 * 1024; // 1MB
+
+  // 缓存过期时间
+  static const Duration CHAPTER_CACHE_EXPIRY = Duration(hours: 24);
+  static const Duration CONTENT_CACHE_EXPIRY = Duration(hours: 12);
+  static const Duration CHAPTER_CONTENT_CACHE_EXPIRY = Duration(hours: 6);
+  static const Duration COLOR_CACHE_EXPIRY = Duration(days: 7);
   //菜单动画时长
   static const Duration menuAnimationDuration = Duration(milliseconds: 300);
   //目录抽屉动画时长
@@ -33,7 +51,7 @@ class Global {
   static const double listTileHeight = 48.0;
   //所有字体
   static const List<String> fontFamilies = [
-    'system',
+    'OPPOSans',
     'MiSans',
     'SourceHanSerif',
     '江西拙楷',
@@ -42,7 +60,7 @@ class Global {
 
   // 字体名称映射
   static const Map<String, String> fontFamilyNames = {
-    'system': '系统默认',
+    'OPPOSans': '系统默认',
     'MiSans': 'Xiaomi Sans',
     'SourceHanSerif': '思源宋体',
     '江西拙楷': '楷书',

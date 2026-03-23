@@ -25,22 +25,22 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     });
   }
 
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   Future<void> _importBook() async {
     final hasPermission = await PermissionHelper.requestStoragePermission();
 
     if (!hasPermission) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('需要存储权限才能导入小说')));
-      }
+      _showSnackBar('需要存储权限才能导入小说');
       return;
     }
 
-    _pickFile();
-  }
-
-  Future<void> _pickFile() async {
     try {
       final provider = context.read<BookshelfViewModel>();
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -52,24 +52,14 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         final filePath = result.files.single.path!;
         final success = await provider.importNovel(filePath);
 
-        if (mounted) {
-          if (success) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('导入成功')));
-          } else {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(provider.error ?? '导入失败')));
-          }
+        if (success) {
+          _showSnackBar('导入成功');
+        } else {
+          _showSnackBar(provider.error ?? '导入失败');
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
-      }
+      _showSnackBar('导入失败: $e');
     }
   }
 
@@ -108,9 +98,17 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   void _showSortOptions() {
     final currentSortType = context.read<BookshelfViewModel>().currentSortType;
 
+    // 使用类型安全的方式定义排序选项
+    final sortOptions = [
+      {'type': SortType.byAddTime, 'title': '按添加时间'},
+      {'type': SortType.byTitle, 'title': '按书名'},
+      {'type': SortType.byFileSize, 'title': '按文件大小'},
+      {'type': SortType.byLastRead, 'title': '按最近阅读'},
+    ];
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Global.menuBackgroundColor,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -123,59 +121,27 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Global.menuTextColor,
+              color: Colors.black,
             ),
           ),
           const SizedBox(height: 16),
-          ListTile(
-            title: const Text('按添加时间'),
-            textColor: Global.menuTextColor,
-            trailing: currentSortType == SortType.byAddTime
-                ? const Icon(Icons.check, color: Global.menuHighlightColor)
-                : null,
-            onTap: () {
-              Navigator.pop(context);
-              context.read<BookshelfViewModel>().setSortType(
-                SortType.byAddTime,
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('按书名'),
-            textColor: Global.menuTextColor,
-            trailing: currentSortType == SortType.byTitle
-                ? const Icon(Icons.check, color: Global.menuHighlightColor)
-                : null,
-            onTap: () {
-              Navigator.pop(context);
-              context.read<BookshelfViewModel>().setSortType(SortType.byTitle);
-            },
-          ),
-          ListTile(
-            title: const Text('按文件大小'),
-            textColor: Global.menuTextColor,
-            trailing: currentSortType == SortType.byFileSize
-                ? const Icon(Icons.check, color: Global.menuHighlightColor)
-                : null,
-            onTap: () {
-              Navigator.pop(context);
-              context.read<BookshelfViewModel>().setSortType(
-                SortType.byFileSize,
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('按最近阅读'),
-            textColor: Global.menuTextColor,
-            trailing: currentSortType == SortType.byLastRead
-                ? const Icon(Icons.check, color: Global.menuHighlightColor)
-                : null,
-            onTap: () {
-              Navigator.pop(context);
-              context.read<BookshelfViewModel>().setSortType(
-                SortType.byLastRead,
-              );
-            },
+          ...sortOptions.map(
+            (option) => ListTile(
+              title: Text(option['title'] as String),
+              textColor: Colors.black,
+              tileColor: currentSortType == option['type']
+                  ? Global.menuBackgroundColor.withValues(alpha: 0.5)
+                  : null,
+              trailing: currentSortType == option['type']
+                  ? const Icon(Icons.check, color: Global.menuBackgroundColor)
+                  : null,
+              onTap: () async {
+                Navigator.pop(context);
+                await context.read<BookshelfViewModel>().setSortType(
+                  option['type'] as SortType,
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
         ],

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:novel_reader/providers/settings_view_model.dart';
 import 'package:provider/provider.dart';
 import 'constants/global.dart';
 import 'providers/bookshelf_view_model.dart';
 import 'providers/reader_view_model.dart';
 import 'services/app_initializer.dart';
-import 'services/file_service.dart';
-import 'screens/bookshelf_screen.dart';
 import 'utils/color_utils.dart';
+import 'utils/cache_manager.dart';
+import 'screens/bookshelf_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 初始化颜色缓存
+  ColorUtils.init();
+  // 启动时清理缓存
+  CacheManager().clearAllCachesIfTooLarge();
   await AppInitializer.init();
   runApp(const NovelReaderApp());
 }
@@ -45,10 +48,8 @@ class _NovelReaderAppState extends State<NovelReaderApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      // 应用进入后台时清理缓存
-      FileService().clearCacheIfTooLarge(
-        Global.defaultCacheLimitBytes,
-      ); // 50MB限制
+      // 应用进入后台时清理所有缓存
+      CacheManager().clearAllCachesIfTooLarge();
     }
   }
 
@@ -56,30 +57,18 @@ class _NovelReaderAppState extends State<NovelReaderApp>
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
         ChangeNotifierProvider(create: (_) => BookshelfViewModel()),
         ChangeNotifierProvider(create: (_) => ReaderViewModel()),
       ],
       child: Builder(
         builder: (context) {
-          final settings = context.watch<SettingsViewModel>().settings;
-          final backgroundColor = ColorUtils.parseColor(
-            settings.backgroundColor,
-          );
-          final textColor = ColorUtils.parseColor(settings.textColor);
-          final brightness = ColorUtils.getBrightness(backgroundColor);
-
           return MaterialApp(
             title: '墨读',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               scaffoldBackgroundColor: Colors.white,
               textTheme: ThemeData.light().textTheme.apply(
-                fontFamily: settings.fontFamily == 'system'
-                    ? 'OPPOSans'
-                    : settings.fontFamily,
-                bodyColor: textColor,
-                displayColor: textColor,
+                fontFamily: 'OPPOSans',
               ),
               typography: Typography.material2021(
                 platform: Theme.of(context).platform,
@@ -87,10 +76,6 @@ class _NovelReaderAppState extends State<NovelReaderApp>
               appBarTheme: AppBarTheme(
                 backgroundColor: Global.menuBackgroundColor,
                 foregroundColor: Global.menuTextColor,
-              ),
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: textColor,
-                brightness: brightness,
               ),
             ),
             home: const BookshelfScreen(),

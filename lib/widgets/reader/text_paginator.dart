@@ -10,6 +10,8 @@ class TextPaginator extends StatefulWidget {
   final String chapterTitle;
   final VoidCallback onNextChapter;
   final VoidCallback onPreviousChapter;
+  final double? initialProgress;
+  final bool enablePaging;
 
   const TextPaginator({
     super.key,
@@ -19,6 +21,8 @@ class TextPaginator extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
     required this.onNextChapter,
     required this.onPreviousChapter,
+    this.initialProgress,
+    this.enablePaging = true,
   });
 
   @override
@@ -44,7 +48,10 @@ class _TextPaginatorState extends State<TextPaginator> {
           _currentPage = _pageController.page?.round() ?? 0;
         });
       });
+    // double start = DateTime.now().millisecondsSinceEpoch.toDouble();
     _calculatePages(isBackward: false);
+    // double end = DateTime.now().millisecondsSinceEpoch.toDouble();
+    // print('calculate pages cost: ${end - start}');
   }
 
   @override
@@ -53,7 +60,10 @@ class _TextPaginatorState extends State<TextPaginator> {
     final currentSize = MediaQuery.sizeOf(context);
     if (_lastSize != currentSize) {
       _lastSize = currentSize;
+      // double start = DateTime.now().millisecondsSinceEpoch.toDouble();
       _calculatePages(isBackward: false);
+      // double end = DateTime.now().millisecondsSinceEpoch.toDouble();
+      // print('calculate pages cost: ${end - start}');
     }
   }
 
@@ -68,7 +78,10 @@ class _TextPaginatorState extends State<TextPaginator> {
       if (_pageController.hasClients && !_isBackward) {
         _pageController.jumpToPage(0);
       }
+      // double start = DateTime.now().millisecondsSinceEpoch.toDouble();
       _calculatePages(isBackward: _isBackward);
+      // double end = DateTime.now().millisecondsSinceEpoch.toDouble();
+      // print('calculate pages cost: ${end - start}');
     }
   }
 
@@ -108,6 +121,7 @@ class _TextPaginatorState extends State<TextPaginator> {
     if (mediaQuery == null) return;
 
     final (usableWidth, usableHeight) = _getUsableSize();
+    debugPrint('usableWidth: $usableWidth, usableHeight: $usableHeight');
     final effectiveStyle = widget.style;
     final titleStyle = effectiveStyle.copyWith(
       fontSize: effectiveStyle.fontSize! + 6,
@@ -268,6 +282,19 @@ class _TextPaginatorState extends State<TextPaginator> {
             _pageController.jumpToPage(_currentPage);
           }
         });
+      } else if (widget.initialProgress != null &&
+          widget.initialProgress! > 0 &&
+          _pages.isNotEmpty) {
+        // 根据初始进度跳转到相应页面
+        _currentPage = ((widget.initialProgress! * (_pages.length - 1)))
+            .floor();
+        _currentPage = _currentPage.clamp(0, _pages.length - 1);
+        // 在下一帧跳转到相应页面
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients && mounted) {
+            _pageController.jumpToPage(_currentPage);
+          }
+        });
       }
     });
   }
@@ -275,8 +302,10 @@ class _TextPaginatorState extends State<TextPaginator> {
   (double, double) _getUsableSize() {
     final direction = Directionality.of(context);
     final horizontalPadding = widget.padding.resolve(direction).horizontal;
+    final verticalPadding = widget.padding.resolve(direction).vertical;
     final usableWidth = MediaQuery.of(context).size.width - horizontalPadding;
-    final usableHeight = MediaQuery.of(context).size.height * 0.88;
+    final usableHeight =
+        MediaQuery.of(context).size.height * 0.92 - verticalPadding-48.0;
     return (usableWidth, usableHeight);
   }
 
@@ -321,16 +350,23 @@ class _TextPaginatorState extends State<TextPaginator> {
     if (_pages.isEmpty) {
       return const Center(child: Text('无内容'));
     }
+    final infoStyle = widget.style.copyWith(
+      fontSize: widget.style.fontSize! - 10,
+      fontWeight: FontWeight.bold,
+    );
     return Stack(
       children: [
         PageView.builder(
           controller: _pageController,
           itemCount: _pages.length,
+          physics: widget.enablePaging ? null : NeverScrollableScrollPhysics(),
           onPageChanged: (index) {
-            context.read<ReaderViewModel>().updatePageInfo(
-              currentPage: index + 1,
-              totalPages: _pages.length,
-            );
+            if (widget.enablePaging) {
+              context.read<ReaderViewModel>().updatePageInfo(
+                currentPage: index + 1,
+                totalPages: _pages.length,
+              );
+            }
           },
           itemBuilder: (context, index) {
             return Padding(
@@ -352,18 +388,20 @@ class _TextPaginatorState extends State<TextPaginator> {
         Align(
           alignment: Alignment.centerLeft,
           child: GestureDetector(
-            onTap: () {
-              final currentPage = _pageController.page?.round() ?? 0;
-              if (currentPage > 0) {
-                _pageController.previousPage(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                );
-              } else {
-                _isBackward = true;
-                widget.onPreviousChapter();
-              }
-            },
+            onTap: widget.enablePaging
+                ? () {
+                    final currentPage = _pageController.page?.round() ?? 0;
+                    if (currentPage > 0) {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                      );
+                    } else {
+                      _isBackward = true;
+                      widget.onPreviousChapter();
+                    }
+                  }
+                : null,
             child: Container(
               width: MediaQuery.of(context).size.width / 4,
               color: Colors.transparent,
@@ -373,18 +411,20 @@ class _TextPaginatorState extends State<TextPaginator> {
         Align(
           alignment: Alignment.centerRight,
           child: GestureDetector(
-            onTap: () {
-              final currentPage = _pageController.page?.round() ?? 0;
-              if (currentPage < _pages.length - 1) {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeIn,
-                );
-              } else {
-                _isBackward = false;
-                widget.onNextChapter();
-              }
-            },
+            onTap: widget.enablePaging
+                ? () {
+                    final currentPage = _pageController.page?.round() ?? 0;
+                    if (currentPage < _pages.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeIn,
+                      );
+                    } else {
+                      _isBackward = false;
+                      widget.onNextChapter();
+                    }
+                  }
+                : null,
             child: Container(
               width: MediaQuery.of(context).size.width / 4,
               height: double.infinity,
@@ -393,14 +433,19 @@ class _TextPaginatorState extends State<TextPaginator> {
           ),
         ),
         Positioned(
-          bottom: 5,
-          right: 5,
+          bottom: 10,
+          left: MediaQuery.of(context).size.width / 2,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: Colors.transparent,
             ),
-            child: Text('${_currentPage + 1}/$_totalPages'),
+            child: RichText(
+              text: TextSpan(
+                text: '${_currentPage + 1}/$_totalPages',
+                style: infoStyle,
+              ),
+            ),
           ),
         ),
       ],

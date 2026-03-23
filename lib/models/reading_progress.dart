@@ -3,24 +3,24 @@ class ReadingProgress {
   final String novelId;
   //当前章节数
   final int chapterIndex;
-  //当前滚动进度
-  final double scrollProgress;
+  //当前章节内阅读进度
+  final double progressInChapter;
 
   ReadingProgress({
     required this.novelId,
     required this.chapterIndex,
-    this.scrollProgress = 0.0,
+    this.progressInChapter = 0.0,
   });
 
   ReadingProgress copyWith({
     String? novelId,
     int? chapterIndex,
-    double? scrollProgress,
+    double? progressInChapter,
   }) {
     return ReadingProgress(
       novelId: novelId ?? this.novelId,
       chapterIndex: chapterIndex ?? this.chapterIndex,
-      scrollProgress: scrollProgress ?? this.scrollProgress,
+      progressInChapter: progressInChapter ?? this.progressInChapter,
     );
   }
 
@@ -28,7 +28,7 @@ class ReadingProgress {
     return {
       'novelId': novelId,
       'chapterIndex': chapterIndex,
-      'scrollProgress': scrollProgress,
+      'progressInChapter': progressInChapter,
     };
   }
 
@@ -36,7 +36,7 @@ class ReadingProgress {
     return ReadingProgress(
       novelId: map['novelId'] as String,
       chapterIndex: map['chapterIndex'] as int,
-      scrollProgress: map['scrollProgress'] as double? ?? 0.0,
+      progressInChapter: map['progressInChapter'] as double? ?? 0.0,
     );
   }
 }

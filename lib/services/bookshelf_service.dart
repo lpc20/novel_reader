@@ -102,32 +102,12 @@ class BookshelfService {
   }
 
   Future<void> removeNovel(String novelId) async {
-    final novel = getNovel(novelId);
-    if (novel != null) {
-      try {
-        final file = File(novel.filePath);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (_) {
-        // 删除失败静默处理
-      }
-    }
-
     _novels.removeWhere((novel) => novel.id == novelId);
     _progressMap.remove(novelId);
     _debouncedSaveNovels();
     _progressDebouncer.run(() {
       _saveProgress();
     });
-  }
-
-  Future<void> updateNovel(Novel novel) async {
-    final index = _novels.indexWhere((n) => n.id == novel.id);
-    if (index >= 0) {
-      _novels[index] = novel;
-      _debouncedSaveNovels();
-    }
   }
 
   Novel? getNovel(String novelId) {
@@ -157,13 +137,11 @@ class BookshelfService {
     }
   }
 
-  List<Novel> getRecentNovels({int limit = 10}) {
-    final sortedNovels = _novels.where((n) => n.lastReadTime != null).toList();
-    sortedNovels.sort(
-      (a, b) => (b.lastReadTime ?? DateTime(1970)).compareTo(
-        a.lastReadTime ?? DateTime(1970),
-      ),
-    );
-    return sortedNovels.take(limit).toList();
+  Future<void> updateNovel(Novel novel) async {
+    final index = _novels.indexWhere((n) => n.id == novel.id);
+    if (index >= 0) {
+      _novels[index] = novel;
+      _debouncedSaveNovels();
+    }
   }
 }
