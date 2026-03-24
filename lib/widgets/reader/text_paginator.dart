@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:novel_reader/constants/global.dart';
 import 'package:novel_reader/providers/reader_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +19,12 @@ class TextPaginator extends StatefulWidget {
     required this.paragraphs,
     required this.style,
     required this.chapterTitle,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
+    this.padding = const EdgeInsets.only(
+      left: 16.0,
+      right: 16.0,
+      top: 48.0,
+      bottom: 16.0,
+    ),
     required this.onNextChapter,
     required this.onPreviousChapter,
     this.initialProgress,
@@ -305,7 +311,7 @@ class _TextPaginatorState extends State<TextPaginator> {
     final verticalPadding = widget.padding.resolve(direction).vertical;
     final usableWidth = MediaQuery.of(context).size.width - horizontalPadding;
     final usableHeight =
-        MediaQuery.of(context).size.height * 0.92 - verticalPadding-48.0;
+        MediaQuery.of(context).size.height * 0.92 - verticalPadding - 48.0;
     return (usableWidth, usableHeight);
   }
 
@@ -351,8 +357,10 @@ class _TextPaginatorState extends State<TextPaginator> {
       return const Center(child: Text('无内容'));
     }
     final infoStyle = widget.style.copyWith(
-      fontSize: widget.style.fontSize! - 10,
-      fontWeight: FontWeight.bold,
+      fontSize: widget.style.fontSize! - 6,
+      color: Global.menuTextColor,
+      height: 1.3,
+      letterSpacing: 1.0,
     );
     return Stack(
       children: [
@@ -429,6 +437,19 @@ class _TextPaginatorState extends State<TextPaginator> {
               width: MediaQuery.of(context).size.width / 4,
               height: double.infinity,
               color: Colors.transparent,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 35,
+          left: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.transparent,
+            ),
+            child: RichText(
+              text: TextSpan(text: widget.chapterTitle, style: infoStyle),
             ),
           ),
         ),

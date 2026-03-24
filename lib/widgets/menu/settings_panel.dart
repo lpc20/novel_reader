@@ -72,33 +72,31 @@ class SettingsPanel extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: Global.buttonTextColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: DropdownButton<String>(
-                value: fontFamily,
-                isExpanded: true,
-                dropdownColor: Global.buttonTextColor,
-                underline: const SizedBox(),
-                style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
-                items: Global.fontFamilies.map((font) {
-                  return DropdownMenuItem(
-                    value: font,
-                    child: Text(
-                      Global.fontFamilyNames[font] ?? font,
-                      style: TextStyle(fontSize: 12, fontFamily: font),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    onFontFamilyChange(value);
-                  }
-                },
-              ),
+            child: DropdownButton<String>(
+              value: fontFamily,
+              isExpanded: true,
+              dropdownColor: Global.buttonTextColor,
+              underline: const SizedBox(),
+              style: const TextStyle(fontSize: 12, color: Global.menuTextColor),
+              items: Global.fontFamilies.map((font) {
+                return DropdownMenuItem(
+                  value: font,
+                  child: Text(
+                    Global.fontFamilyNames[font] ?? font,
+                    style: TextStyle(fontSize: 12, fontFamily: font),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  onFontFamilyChange(value);
+                }
+              },
             ),
           ),
         ),
@@ -177,18 +175,16 @@ class SettingsPanel extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: Global.menuTextColor),
         ),
         const SizedBox(width: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          child: Switch(
-            value: usePageMode,
-            activeThumbColor: Colors.white,
-            trackColor: WidgetStateColor.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? Global.menuHighlightColor
-                  : Global.menuTextColor,
-            ),
-            onChanged: onUsePageModeChange,
+        Switch(
+          value: usePageMode,
+          activeThumbColor: Colors.white,
+          splashRadius: 24,
+          trackColor: WidgetStateColor.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? Global.menuHighlightColor
+                : Global.menuTextColor,
           ),
+          onChanged: onUsePageModeChange,
         ),
       ],
     );

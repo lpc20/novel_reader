@@ -237,15 +237,20 @@ class FileService {
           title = '${title.substring(0, 50)}...';
         }
 
-        chapters.add(
-          Chapter(
-            index: index,
-            title: title,
-            startPosition: start,
-            endPosition: end,
-          ),
-        );
-        index++;
+        // 检查章节是否只有标题没有正文
+        final contentStart = match.end;
+        final chapterContent = content.substring(contentStart, end).trim();
+        if (chapterContent.isNotEmpty) {
+          chapters.add(
+            Chapter(
+              index: index,
+              title: title,
+              startPosition: start,
+              endPosition: end,
+            ),
+          );
+          index++;
+        }
       }
     }
     return chapters;

@@ -189,31 +189,34 @@ class _ReaderScreenState extends State<ReaderScreen>
             vm.settings.usePageMode
                 ? _buildMainContentWithPaginator()
                 : _buildMainContentWithScrollView(),
+            // Positioned(
+            //   top: 35,
+            //   left: 16,
+            //   child: Container(
+            //     decoration: BoxDecoration(
+            //       borderRadius: BorderRadius.circular(8),
+            //       color: Colors.transparent,
+            //     ),
+            //     child: RichText(
+            //       text: TextSpan(
+            //         text: vm.currentChapter != null
+            //             ? vm.currentChapter!.title
+            //             : '',
+            //         style: TextStyle(
+            //           fontSize: vm.settings.fontSize - 6,
+            //           color: Global.menuTextColor,
+            //           fontFamily: vm.settings.fontFamily,
+            //           height: 1.3,
+            //           letterSpacing: 1.0,
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
             // 章节抽屉
             _buildChapterDrawer(screenWidth),
             // 阅读器菜单
             _buildReaderMenu(screenWidth),
-            !_showMenu?Positioned(
-              top: 35,
-              left: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.transparent,
-                ),
-                child: RichText(
-                  text: TextSpan(
-                    text: vm.currentChapter!=null?vm.currentChapter!.title:'',
-                    style: TextStyle(
-                      fontSize: vm.settings.fontSize-6,
-                      color: Global.menuTextColor,
-                      height: 1.3,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-            ):const SizedBox(),
           ],
         ),
       ),
@@ -368,22 +371,19 @@ class _ReaderScreenState extends State<ReaderScreen>
     }
 
     final vm = context.read<ReaderViewModel>();
-    return Padding(
-      padding: const EdgeInsets.only(top: 48.0, bottom: 10.0),
-      child: TextPaginator(
-        paragraphs: data.paragraphs,
-        chapterTitle: data.chapters[data.currentChapterIndex].title,
-        style: TextStyle(
-          fontSize: data.settings.fontSize,
-          height: data.settings.lineHeight,
-          fontFamily: data.settings.fontFamily,
-          color: ColorUtils.parseColor(data.settings.textColor),
-        ),
-        onNextChapter: () => vm.nextChapter(),
-        onPreviousChapter: () => vm.previousChapter(),
-        initialProgress: vm.progressInChapter,
-        enablePaging: !_showMenu,
+    return TextPaginator(
+      paragraphs: data.paragraphs,
+      chapterTitle: data.chapters[data.currentChapterIndex].title,
+      style: TextStyle(
+        fontSize: data.settings.fontSize,
+        height: data.settings.lineHeight,
+        fontFamily: data.settings.fontFamily,
+        color: ColorUtils.parseColor(data.settings.textColor),
       ),
+      onNextChapter: () => vm.nextChapter(),
+      onPreviousChapter: () => vm.previousChapter(),
+      initialProgress: vm.progressInChapter,
+      enablePaging: !_showMenu,
     );
   }
 
